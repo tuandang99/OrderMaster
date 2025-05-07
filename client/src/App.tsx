@@ -15,6 +15,7 @@ import ShippingIndex from "@/pages/shipping/index";
 import CustomersIndex from "@/pages/customers/index";
 import ProductsIndex from "@/pages/products/index";
 import ReportsIndex from "@/pages/reports/index";
+import SettingsIndex from "@/pages/settings/index";
 
 function Router() {
   return (
@@ -27,6 +28,7 @@ function Router() {
       <Route path="/customers" component={CustomersIndex} />
       <Route path="/products" component={ProductsIndex} />
       <Route path="/reports" component={ReportsIndex} />
+      <Route path="/settings" component={SettingsIndex} />
       <Route component={NotFound} />
     </Switch>
   );

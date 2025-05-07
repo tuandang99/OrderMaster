@@ -9,6 +9,7 @@ import {
   orderStatusEnum,
   shippingCarrierEnum
 } from "@shared/schema";
+import { registerShippingCarrierRoutes } from "./api/shipping-carrier";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Customers API
