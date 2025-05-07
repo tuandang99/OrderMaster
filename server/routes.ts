@@ -12,6 +12,8 @@ import {
 import { registerShippingCarrierRoutes } from "./api/shipping-carrier";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Đăng ký các route cho API đơn vị vận chuyển
+  registerShippingCarrierRoutes(app);
   // Customers API
   app.get("/api/customers", async (req: Request, res: Response) => {
     try {

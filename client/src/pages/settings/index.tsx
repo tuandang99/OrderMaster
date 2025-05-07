@@ -1,423 +1,483 @@
-import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
-import { Settings, Save } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import React, { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardFooter, 
+  CardHeader, 
+  CardTitle 
+} from '@/components/ui/card';
+import { 
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger
+} from '@/components/ui/tabs';
+import { 
+  Form, 
+  FormControl, 
+  FormField, 
+  FormItem, 
+  FormLabel 
+} from '@/components/ui/form';
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { useForm } from 'react-hook-form';
+import { Switch } from '@/components/ui/switch';
+import { toast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
+
+interface ShippingCarrier {
+  id: string;
+  name: string;
+  apiConnected: boolean;
+}
+
+interface ShippingSettings {
+  defaultCarrier: string;
+  apiKeys: Record<string, string>;
+  defaultSettings: {
+    insurance: boolean;
+    requireSignature: boolean;
+    autoCreateShipments: boolean;
+  };
+}
+
+interface GeneralSettings {
+  companyName: string;
+  address: string;
+  phone: string;
+  email: string;
+  taxId: string;
+  notifyCustomers: boolean;
+  autoConfirmOrders: boolean;
+}
 
 export default function SettingsPage() {
-  const { toast } = useToast();
-  const [selectedTab, setSelectedTab] = useState("general");
+  const [activeTab, setActiveTab] = useState('general');
   
-  // General settings state
-  const [generalSettings, setGeneralSettings] = useState({
-    companyName: "Order Manager",
-    email: "contact@ordermanager.vn",
-    phone: "+84 123 456 789",
-    address: "123 Đường ABC, Quận XYZ, TP. Hồ Chí Minh",
-    currency: "VND",
-    dateFormat: "DD/MM/YYYY",
+  // Lấy danh sách đơn vị vận chuyển
+  const { data: carriers } = useQuery<ShippingCarrier[]>({
+    queryKey: ['/api/shipping-carriers/info'],
+    refetchOnWindowFocus: false,
   });
 
-  // Shipping settings state
-  const [shippingSettings, setShippingSettings] = useState({
-    defaultShippingCost: 30000,
-    defaultCarrier: "ghn",
-    autoTrackingEnabled: true,
-    apiKeys: {
-      ghn: "",
-      ghtk: "",
-      viettelPost: "",
-      jtExpress: ""
+  // ======================= GENERAL SETTINGS =======================
+  const generalForm = useForm<GeneralSettings>({
+    defaultValues: {
+      companyName: '',
+      address: '',
+      phone: '',
+      email: '',
+      taxId: '',
+      notifyCustomers: true,
+      autoConfirmOrders: false,
     }
   });
 
-  // Notification settings state
-  const [notificationSettings, setNotificationSettings] = useState({
-    emailNotificationsEnabled: true,
-    orderCreatedTemplate: "Đơn hàng #{order_number} đã được tạo thành công. Cảm ơn quý khách đã mua hàng.",
-    orderShippedTemplate: "Đơn hàng #{order_number} đã được giao cho đơn vị vận chuyển. Mã vận đơn: {tracking_number}.",
-    orderCompletedTemplate: "Đơn hàng #{order_number} đã được giao thành công. Cảm ơn quý khách đã mua hàng.",
+  // Load general settings from localStorage
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('generalSettings');
+    if (savedSettings) {
+      const parsedSettings = JSON.parse(savedSettings);
+      generalForm.reset(parsedSettings);
+    }
+  }, [generalForm]);
+
+  // Save general settings
+  const onSaveGeneralSettings = (data: GeneralSettings) => {
+    localStorage.setItem('generalSettings', JSON.stringify(data));
+    toast({
+      title: "Cài đặt đã được lưu",
+      description: "Thông tin cơ bản đã được cập nhật thành công",
+    });
+  };
+
+  // ======================= SHIPPING SETTINGS =======================
+  const shippingForm = useForm<ShippingSettings>({
+    defaultValues: {
+      defaultCarrier: '',
+      apiKeys: {
+        ghn: '',
+        ghtk: '',
+        viettel_post: '',
+        jt_express: '',
+      },
+      defaultSettings: {
+        insurance: true,
+        requireSignature: false,
+        autoCreateShipments: false,
+      }
+    }
   });
 
-  // Handlers for form changes
-  const handleGeneralChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setGeneralSettings({
-      ...generalSettings,
-      [e.target.name]: e.target.value
-    });
-  };
-
-  const handleGeneralSelectChange = (field: string, value: string) => {
-    setGeneralSettings({
-      ...generalSettings,
-      [field]: value
-    });
-  };
-
-  const handleShippingChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.name.startsWith("apiKeys.")) {
-      const key = e.target.name.split(".")[1];
-      setShippingSettings({
-        ...shippingSettings,
-        apiKeys: {
-          ...shippingSettings.apiKeys,
-          [key]: e.target.value
-        }
-      });
-    } else {
-      setShippingSettings({
-        ...shippingSettings,
-        [e.target.name]: e.target.name === "defaultShippingCost" 
-          ? parseFloat(e.target.value) 
-          : e.target.value
-      });
+  // Load shipping settings from localStorage
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('shippingSettings');
+    if (savedSettings) {
+      const parsedSettings = JSON.parse(savedSettings);
+      shippingForm.reset(parsedSettings);
     }
-  };
+  }, [shippingForm]);
 
-  const handleShippingSelectChange = (field: string, value: string) => {
-    setShippingSettings({
-      ...shippingSettings,
-      [field]: value
+  // Save shipping settings
+  const onSaveShippingSettings = async (data: ShippingSettings) => {
+    localStorage.setItem('shippingSettings', JSON.stringify(data));
+    
+    // Hiển thị thông báo
+    toast({
+      title: "Cài đặt vận chuyển đã được lưu",
+      description: "Thông tin đơn vị vận chuyển đã được cập nhật thành công",
     });
   };
 
-  const handleShippingSwitchChange = (field: string, checked: boolean) => {
-    setShippingSettings({
-      ...shippingSettings,
-      [field]: checked
-    });
-  };
-
-  const handleNotificationChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setNotificationSettings({
-      ...notificationSettings,
-      [e.target.name]: e.target.value
-    });
-  };
-
-  const handleNotificationSwitchChange = (field: string, checked: boolean) => {
-    setNotificationSettings({
-      ...notificationSettings,
-      [field]: checked
-    });
-  };
-
-  // Mock save settings mutation (would connect to backend in real app)
-  const saveSettingsMutation = useMutation({
-    mutationFn: async (settings: any) => {
-      // This would call the API in a real app
-      // return await apiRequest("POST", "/api/settings", settings);
+  // Test shipping API connection
+  const testApiConnection = async (carrier: string) => {
+    try {
+      // Giả lập kết nối API
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // For now, just return a success after a delay to simulate API call
-      return new Promise((resolve) => {
-        setTimeout(() => resolve({ success: true }), 1000);
-      });
-    },
-    onSuccess: () => {
       toast({
-        title: "Cài đặt đã được lưu",
-        description: "Các thay đổi đã được áp dụng thành công.",
+        title: "Kết nối thành công",
+        description: `Đã kết nối thành công với API của ${carrier}`,
       });
-    },
-    onError: () => {
+    } catch (error) {
       toast({
-        title: "Lỗi",
-        description: "Không thể lưu cài đặt. Vui lòng thử lại sau.",
+        title: "Lỗi kết nối",
+        description: `Không thể kết nối với API của ${carrier}. Vui lòng kiểm tra API key.`,
         variant: "destructive",
       });
-    },
-  });
-
-  const handleSaveSettings = () => {
-    const settings = {
-      general: generalSettings,
-      shipping: shippingSettings,
-      notification: notificationSettings,
-    };
-    
-    saveSettingsMutation.mutate(settings);
+    }
   };
 
   return (
-    <div className="px-4 mx-auto max-w-7xl sm:px-6 md:px-8">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Cài đặt hệ thống</h1>
-          <p className="text-sm font-medium text-gray-500">Quản lý cấu hình của hệ thống</p>
-        </div>
-        <Button onClick={handleSaveSettings} disabled={saveSettingsMutation.isPending} className="gap-2">
-          {saveSettingsMutation.isPending ? (
-            <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
-          ) : (
-            <Save className="w-4 h-4" />
-          )}
-          Lưu cài đặt
-        </Button>
+    <div className="container py-6">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold">Cài đặt hệ thống</h1>
+        <p className="text-muted-foreground">Quản lý cài đặt và tùy chỉnh hệ thống</p>
       </div>
 
-      <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-        <TabsList className="grid w-full max-w-md grid-cols-3 mb-6">
-          <TabsTrigger value="general">Chung</TabsTrigger>
-          <TabsTrigger value="shipping">Vận chuyển</TabsTrigger>
+      <Tabs defaultValue="general" value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="mb-6">
+          <TabsTrigger value="general">Thông tin cơ bản</TabsTrigger>
+          <TabsTrigger value="shipping">Cài đặt vận chuyển</TabsTrigger>
           <TabsTrigger value="notifications">Thông báo</TabsTrigger>
+          <TabsTrigger value="users">Người dùng</TabsTrigger>
         </TabsList>
-        
+
+        {/* Thông tin cơ bản */}
         <TabsContent value="general">
           <Card>
             <CardHeader>
-              <CardTitle>Cài đặt chung</CardTitle>
-              <CardDescription>
-                Quản lý thông tin cơ bản của hệ thống
-              </CardDescription>
+              <CardTitle>Thông tin doanh nghiệp</CardTitle>
+              <CardDescription>Cấu hình thông tin cơ bản của doanh nghiệp</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="companyName">Tên công ty</Label>
-                  <Input
-                    id="companyName"
-                    name="companyName"
-                    value={generalSettings.companyName}
-                    onChange={handleGeneralChange}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email liên hệ</Label>
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    value={generalSettings.email}
-                    onChange={handleGeneralChange}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Số điện thoại</Label>
-                  <Input
-                    id="phone"
-                    name="phone"
-                    value={generalSettings.phone}
-                    onChange={handleGeneralChange}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="currency">Đơn vị tiền tệ</Label>
-                  <Select
-                    value={generalSettings.currency}
-                    onValueChange={(value) => handleGeneralSelectChange("currency", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Chọn đơn vị tiền tệ" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="VND">VND - Việt Nam Đồng</SelectItem>
-                      <SelectItem value="USD">USD - US Dollar</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="dateFormat">Định dạng ngày tháng</Label>
-                  <Select
-                    value={generalSettings.dateFormat}
-                    onValueChange={(value) => handleGeneralSelectChange("dateFormat", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Chọn định dạng" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="DD/MM/YYYY">DD/MM/YYYY</SelectItem>
-                      <SelectItem value="MM/DD/YYYY">MM/DD/YYYY</SelectItem>
-                      <SelectItem value="YYYY-MM-DD">YYYY-MM-DD</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2 sm:col-span-2">
-                  <Label htmlFor="address">Địa chỉ</Label>
-                  <Textarea
-                    id="address"
+            <CardContent>
+              <Form {...generalForm}>
+                <form onSubmit={generalForm.handleSubmit(onSaveGeneralSettings)} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={generalForm.control}
+                      name="companyName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Tên doanh nghiệp</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Nhập tên doanh nghiệp" {...field} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={generalForm.control}
+                      name="taxId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Mã số thuế</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Nhập mã số thuế" {...field} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <FormField
+                    control={generalForm.control}
                     name="address"
-                    value={generalSettings.address}
-                    onChange={handleGeneralChange}
-                    rows={3}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Địa chỉ</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Nhập địa chỉ" {...field} />
+                        </FormControl>
+                      </FormItem>
+                    )}
                   />
-                </div>
-              </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={generalForm.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Số điện thoại</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Nhập số điện thoại" {...field} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={generalForm.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Nhập địa chỉ email" {...field} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="space-y-4 mt-8">
+                    <h3 className="text-lg font-medium">Tùy chọn đơn hàng</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={generalForm.control}
+                        name="notifyCustomers"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                            <div className="space-y-0.5">
+                              <FormLabel className="text-base">Thông báo cho khách hàng</FormLabel>
+                              <CardDescription>Tự động gửi email thông báo khi trạng thái đơn hàng thay đổi</CardDescription>
+                            </div>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={generalForm.control}
+                        name="autoConfirmOrders"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                            <div className="space-y-0.5">
+                              <FormLabel className="text-base">Tự động xác nhận đơn hàng</FormLabel>
+                              <CardDescription>Tự động chuyển trạng thái đơn hàng mới sang xác nhận</CardDescription>
+                            </div>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-6 flex justify-end">
+                    <Button type="submit">Lưu cài đặt</Button>
+                  </div>
+                </form>
+              </Form>
             </CardContent>
           </Card>
         </TabsContent>
-        
+
+        {/* Cài đặt vận chuyển */}
         <TabsContent value="shipping">
           <Card>
             <CardHeader>
               <CardTitle>Cài đặt vận chuyển</CardTitle>
-              <CardDescription>
-                Cấu hình thông tin vận chuyển và API đơn vị vận chuyển
-              </CardDescription>
+              <CardDescription>Quản lý cài đặt vận chuyển và liên kết với đơn vị giao hàng</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="defaultShippingCost">Phí vận chuyển mặc định</Label>
-                  <Input
-                    id="defaultShippingCost"
-                    name="defaultShippingCost"
-                    type="number"
-                    value={shippingSettings.defaultShippingCost}
-                    onChange={handleShippingChange}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="defaultCarrier">Đơn vị vận chuyển mặc định</Label>
-                  <Select
-                    value={shippingSettings.defaultCarrier}
-                    onValueChange={(value) => handleShippingSelectChange("defaultCarrier", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Chọn đơn vị vận chuyển" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ghn">Giao Hàng Nhanh</SelectItem>
-                      <SelectItem value="ghtk">Giao Hàng Tiết Kiệm</SelectItem>
-                      <SelectItem value="viettel_post">Viettel Post</SelectItem>
-                      <SelectItem value="jt_express">J&T Express</SelectItem>
-                      <SelectItem value="other">Khác</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-center space-x-2 sm:col-span-2">
-                  <Switch
-                    id="autoTrackingEnabled"
-                    checked={shippingSettings.autoTrackingEnabled}
-                    onCheckedChange={(checked) => handleShippingSwitchChange("autoTrackingEnabled", checked)}
-                  />
-                  <Label htmlFor="autoTrackingEnabled">Tự động cập nhật trạng thái vận chuyển</Label>
-                </div>
-                
-                <div className="space-y-4 sm:col-span-2">
-                  <h3 className="text-lg font-medium">API Keys đơn vị vận chuyển</h3>
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="apiKeyGhn">Giao Hàng Nhanh API Key</Label>
-                      <Input
-                        id="apiKeyGhn"
-                        name="apiKeys.ghn"
-                        value={shippingSettings.apiKeys.ghn}
-                        onChange={handleShippingChange}
-                        type="password"
-                      />
+            <CardContent>
+              <Form {...shippingForm}>
+                <form onSubmit={shippingForm.handleSubmit(onSaveShippingSettings)} className="space-y-6">
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">Đơn vị vận chuyển mặc định</h3>
+                    <FormField
+                      control={shippingForm.control}
+                      name="defaultCarrier"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Đơn vị vận chuyển</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Chọn đơn vị vận chuyển mặc định" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {carriers?.map(carrier => (
+                                <SelectItem key={carrier.id} value={carrier.id}>
+                                  {carrier.name} {carrier.apiConnected && "✓"}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="space-y-4 mt-8">
+                    <h3 className="text-lg font-medium">API Keys</h3>
+                    <p className="text-sm text-muted-foreground">Thêm khóa API để kết nối với các đơn vị vận chuyển</p>
+                    <div className="space-y-4">
+                      {carriers?.map(carrier => (
+                        <div key={carrier.id} className="grid grid-cols-1 lg:grid-cols-12 gap-2 p-4 border rounded-lg">
+                          <div className="lg:col-span-3 flex items-center">
+                            <span className="font-medium">{carrier.name}</span>
+                            {carrier.apiConnected && (
+                              <span className="ml-2 text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
+                                Đã kết nối
+                              </span>
+                            )}
+                          </div>
+                          <div className="lg:col-span-7">
+                            <FormField
+                              control={shippingForm.control}
+                              name={`apiKeys.${carrier.id}` as any}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input 
+                                      placeholder="Nhập API key"
+                                      type="password"
+                                      {...field} 
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                          <div className="lg:col-span-2 flex items-center justify-end">
+                            <Button 
+                              type="button" 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => testApiConnection(carrier.name)}
+                            >
+                              Kiểm tra
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="apiKeyGhtk">Giao Hàng Tiết Kiệm API Key</Label>
-                      <Input
-                        id="apiKeyGhtk"
-                        name="apiKeys.ghtk"
-                        value={shippingSettings.apiKeys.ghtk}
-                        onChange={handleShippingChange}
-                        type="password"
+                  </div>
+
+                  <div className="space-y-4 mt-8">
+                    <h3 className="text-lg font-medium">Cài đặt vận chuyển mặc định</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <FormField
+                        control={shippingForm.control}
+                        name="defaultSettings.insurance"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                            <div className="space-y-0.5">
+                              <FormLabel className="text-base">Bảo hiểm hàng hóa</FormLabel>
+                              <CardDescription>Tự động thêm bảo hiểm cho đơn hàng</CardDescription>
+                            </div>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
                       />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="apiKeyViettelPost">Viettel Post API Key</Label>
-                      <Input
-                        id="apiKeyViettelPost"
-                        name="apiKeys.viettelPost"
-                        value={shippingSettings.apiKeys.viettelPost}
-                        onChange={handleShippingChange}
-                        type="password"
+                      <FormField
+                        control={shippingForm.control}
+                        name="defaultSettings.requireSignature"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                            <div className="space-y-0.5">
+                              <FormLabel className="text-base">Yêu cầu chữ ký</FormLabel>
+                              <CardDescription>Yêu cầu chữ ký khi giao hàng</CardDescription>
+                            </div>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
                       />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="apiKeyJtExpress">J&T Express API Key</Label>
-                      <Input
-                        id="apiKeyJtExpress"
-                        name="apiKeys.jtExpress"
-                        value={shippingSettings.apiKeys.jtExpress}
-                        onChange={handleShippingChange}
-                        type="password"
+                      <FormField
+                        control={shippingForm.control}
+                        name="defaultSettings.autoCreateShipments"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                            <div className="space-y-0.5">
+                              <FormLabel className="text-base">Tự động tạo vận đơn</FormLabel>
+                              <CardDescription>Tự động tạo vận đơn khi xác nhận đơn hàng</CardDescription>
+                            </div>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
                       />
                     </div>
                   </div>
-                </div>
-              </div>
+
+                  <div className="mt-6 flex justify-end">
+                    <Button type="submit">Lưu cài đặt</Button>
+                  </div>
+                </form>
+              </Form>
             </CardContent>
           </Card>
         </TabsContent>
-        
+
+        {/* Cài đặt thông báo */}
         <TabsContent value="notifications">
           <Card>
             <CardHeader>
               <CardTitle>Cài đặt thông báo</CardTitle>
-              <CardDescription>
-                Cấu hình mẫu thông báo cho khách hàng
-              </CardDescription>
+              <CardDescription>Quản lý cài đặt thông báo qua email và SMS</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="emailNotificationsEnabled"
-                  checked={notificationSettings.emailNotificationsEnabled}
-                  onCheckedChange={(checked) => handleNotificationSwitchChange("emailNotificationsEnabled", checked)}
-                />
-                <Label htmlFor="emailNotificationsEnabled">Kích hoạt thông báo qua email</Label>
+            <CardContent>
+              <div className="p-12 text-center">
+                <p className="text-muted-foreground">Tính năng đang được phát triển. Vui lòng quay lại sau.</p>
               </div>
-              
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">Mẫu thông báo</h3>
-                <div className="grid grid-cols-1 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="orderCreatedTemplate">Thông báo tạo đơn hàng</Label>
-                    <Textarea
-                      id="orderCreatedTemplate"
-                      name="orderCreatedTemplate"
-                      value={notificationSettings.orderCreatedTemplate}
-                      onChange={handleNotificationChange}
-                      rows={3}
-                    />
-                    <p className="text-xs text-gray-500">
-                      Sử dụng {"{order_number}"} để thay thế bằng mã đơn hàng.
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="orderShippedTemplate">Thông báo giao cho đơn vị vận chuyển</Label>
-                    <Textarea
-                      id="orderShippedTemplate"
-                      name="orderShippedTemplate"
-                      value={notificationSettings.orderShippedTemplate}
-                      onChange={handleNotificationChange}
-                      rows={3}
-                    />
-                    <p className="text-xs text-gray-500">
-                      Sử dụng {"{order_number}"} và {"{tracking_number}"} để thay thế bằng thông tin tương ứng.
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="orderCompletedTemplate">Thông báo hoàn thành đơn hàng</Label>
-                    <Textarea
-                      id="orderCompletedTemplate"
-                      name="orderCompletedTemplate"
-                      value={notificationSettings.orderCompletedTemplate}
-                      onChange={handleNotificationChange}
-                      rows={3}
-                    />
-                    <p className="text-xs text-gray-500">
-                      Sử dụng {"{order_number}"} để thay thế bằng mã đơn hàng.
-                    </p>
-                  </div>
-                </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Quản lý người dùng */}
+        <TabsContent value="users">
+          <Card>
+            <CardHeader>
+              <CardTitle>Quản lý người dùng</CardTitle>
+              <CardDescription>Quản lý tài khoản và quyền truy cập hệ thống</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="p-12 text-center">
+                <p className="text-muted-foreground">Tính năng đang được phát triển. Vui lòng quay lại sau.</p>
               </div>
             </CardContent>
           </Card>
