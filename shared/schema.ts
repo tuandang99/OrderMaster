@@ -170,7 +170,7 @@ export const createOrderSchema = z.object({
   })),
   shipping: z.object({
     cost: z.number().min(0),
-    carrier: shippingCarrierEnum,
+    carrier: z.string(),
   }),
   notes: z.string().optional(),
 });
