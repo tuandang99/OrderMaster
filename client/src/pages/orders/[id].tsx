@@ -223,7 +223,7 @@ export default function OrderDetailsPage() {
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest("DELETE", `/api/orders/${orderId}`);
+      return await apiRequest("DELETE", `/api/orders/${order.id}`);
     },
     onSuccess: () => {
       toast({
