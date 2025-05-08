@@ -41,6 +41,7 @@ export interface IStorage {
   getProductBySku(sku: string): Promise<Product | undefined>;
   createProduct(product: InsertProduct): Promise<Product>;
   updateProduct(id: number, product: Partial<InsertProduct>): Promise<Product | undefined>;
+  deleteProduct(id: number): Promise<void>;
   
   // Inventory operations
   getInventoryHistory(productId: number): Promise<InventoryHistory[]>;
@@ -245,12 +246,51 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateProduct(id: number, product: Partial<InsertProduct>): Promise<Product | undefined> {
-    const [updatedProduct] = await db
-      .update(products)
-      .set(product)
-      .where(eq(products.id, id))
-      .returning();
-    return updatedProduct;
+    try {
+      console.log("Updating product with ID:", id, "Data:", product);
+      const [updatedProduct] = await db
+        .update(products)
+        .set(product)
+        .where(eq(products.id, id))
+        .returning();
+      console.log("Updated product result:", updatedProduct);
+      return updatedProduct;
+    } catch (error) {
+      console.error("Error updating product:", error);
+      throw error;
+    }
+  }
+  
+  async deleteProduct(id: number): Promise<void> {
+    try {
+      console.log("Deleting product with ID:", id);
+      
+      // Kiểm tra nếu sản phẩm đang được sử dụng trong đơn hàng
+      const orderItemsWithProduct = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(orderItems)
+        .where(eq(orderItems.productId, id));
+      
+      const count = Number(orderItemsWithProduct[0]?.count || 0);
+      if (count > 0) {
+        throw new Error(`Cannot delete product that is used in ${count} orders`);
+      }
+      
+      // Xóa lịch sử tồn kho
+      await db
+        .delete(inventoryHistory)
+        .where(eq(inventoryHistory.productId, id));
+        
+      // Xóa sản phẩm
+      await db
+        .delete(products)
+        .where(eq(products.id, id));
+        
+      console.log("Product deleted successfully");
+    } catch (error) {
+      console.error("Error deleting product:", error);
+      throw error;
+    }
   }
   
   // Inventory History operations

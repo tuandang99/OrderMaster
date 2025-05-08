@@ -133,6 +133,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to create product" });
     }
   });
+  
+  app.patch("/api/products/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID sản phẩm không hợp lệ" });
+      }
+      
+      console.log("Update product request:", { id, body: req.body });
+      
+      // Kiểm tra xem sản phẩm có tồn tại không
+      const product = await storage.getProductById(id);
+      if (!product) {
+        return res.status(404).json({ message: "Không tìm thấy sản phẩm" });
+      }
+      
+      // Nếu SKU được thay đổi, kiểm tra tính duy nhất
+      if (req.body.sku && req.body.sku !== product.sku) {
+        const existingProduct = await storage.getProductBySku(req.body.sku);
+        if (existingProduct && existingProduct.id !== id) {
+          return res.status(400).json({ message: "Mã SKU đã tồn tại cho sản phẩm khác" });
+        }
+      }
+      
+      // Cập nhật sản phẩm
+      const updatedProduct = await storage.updateProduct(id, req.body);
+      
+      res.json(updatedProduct);
+    } catch (error) {
+      console.error("Error updating product:", error);
+      res.status(500).json({ message: "Không thể cập nhật sản phẩm" });
+    }
+  });
+  
+  app.delete("/api/products/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID sản phẩm không hợp lệ" });
+      }
+      
+      // Kiểm tra sản phẩm tồn tại
+      const product = await storage.getProductById(id);
+      if (!product) {
+        return res.status(404).json({ message: "Không tìm thấy sản phẩm" });
+      }
+      
+      // Xóa sản phẩm
+      await storage.deleteProduct(id);
+      return res.status(200).json({ message: "Đã xóa sản phẩm thành công" });
+    } catch (error: any) {
+      console.error("Error deleting product:", error);
+      
+      // Gửi lỗi cụ thể nếu sản phẩm đang được sử dụng trong đơn hàng
+      if (error.message?.includes("Cannot delete product that is used in")) {
+        return res.status(400).json({ message: error.message });
+      }
+      
+      return res.status(500).json({ message: "Không thể xóa sản phẩm" });
+    }
+  });
 
   // Quản lý kho
   app.patch("/api/products/:id/inventory", async (req: Request, res: Response) => {
