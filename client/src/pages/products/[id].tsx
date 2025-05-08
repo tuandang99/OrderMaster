@@ -102,7 +102,11 @@ export default function ProductDetailsPage() {
     mutationFn: async (data: z.infer<typeof inventoryFormSchema>) => {
       return await apiRequest(`/api/products/${productId}/inventory`, {
         method: 'PATCH',
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          type: data.type,
+          quantity: data.quantity,
+          note: data.note || ''
+        }),
       });
     },
     onSuccess: () => {
