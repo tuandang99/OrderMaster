@@ -11,7 +11,7 @@ async function seedDatabase() {
     .insert(users)
     .values({
       username: "admin",
-      passwordHash: "hashed_password", // Trong thực tế nên dùng bcrypt để hash
+      password: "admin123", // Mật khẩu đơn giản cho mục đích demo 
       name: "Admin User",
     })
     .returning()
