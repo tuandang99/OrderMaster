@@ -299,6 +299,112 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(shippingCarrierEnum.enumValues);
   });
 
+  // API cho Dashboard
+  app.get("/api/dashboard/stats", async (req: Request, res: Response) => {
+    try {
+      // Lấy tổng số đơn hàng
+      const { orders: allOrders, total: totalOrders } = await storage.getOrders();
+      
+      // Lấy tất cả khách hàng
+      const customers = await storage.getCustomers();
+      
+      // Đơn hàng theo trạng thái
+      const pendingOrders = allOrders.filter(order => order.status === 'pending');
+      const confirmedOrders = allOrders.filter(order => order.status === 'confirmed');
+      const shippingOrders = allOrders.filter(order => order.status === 'shipping');
+      const completedOrders = allOrders.filter(order => order.status === 'completed');
+      const cancelledOrders = allOrders.filter(order => order.status === 'cancelled');
+      
+      // Tính tổng doanh thu từ tất cả đơn hàng
+      const totalRevenue = allOrders.reduce((sum, order) => sum + order.total, 0);
+      
+      // Đơn hàng trong 7 ngày gần đây
+      const last7Days = new Date();
+      last7Days.setDate(last7Days.getDate() - 7);
+      const recentOrders = allOrders.filter(order => new Date(order.orderDate) >= last7Days);
+      
+      // Khách hàng mới trong 30 ngày gần đây
+      const last30Days = new Date();
+      last30Days.setDate(last30Days.getDate() - 30);
+      const newCustomers = customers.filter(customer => new Date(customer.createdAt as unknown as string) >= last30Days);
+      
+      // Tính doanh thu theo ngày trong tuần
+      const dayNames = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+      const salesByDay = dayNames.map(name => ({ name, total: 0 }));
+      
+      recentOrders.forEach(order => {
+        const orderDate = new Date(order.orderDate);
+        const dayIndex = orderDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+        salesByDay[dayIndex].total += order.total;
+      });
+      
+      // Tạo dữ liệu đơn hàng theo trạng thái
+      const ordersByStatus = [
+        { name: "Chờ xử lý", value: pendingOrders.length },
+        { name: "Đã xác nhận", value: confirmedOrders.length },
+        { name: "Đang giao", value: shippingOrders.length },
+        { name: "Hoàn tất", value: completedOrders.length },
+        { name: "Đã hủy", value: cancelledOrders.length }
+      ];
+      
+      // Lấy sản phẩm bán chạy nhất (tính từ order_items)
+      const productCounts = new Map<number, { count: number, name: string }>();
+      
+      for (const order of allOrders) {
+        if (order.items) {
+          for (const item of order.items) {
+            const productId = item.productId;
+            const currentCount = productCounts.get(productId) || { count: 0, name: item.product?.name || "Unknown Product" };
+            productCounts.set(productId, { 
+              count: currentCount.count + item.quantity,
+              name: item.product?.name || "Unknown Product"
+            });
+          }
+        }
+      }
+      
+      // Chuyển Map thành mảng và sắp xếp theo số lượng bán
+      const topProducts = Array.from(productCounts.entries())
+        .map(([id, data]) => ({ id, name: data.name, quantity: data.count }))
+        .sort((a, b) => b.quantity - a.quantity)
+        .slice(0, 5); // Top 5 sản phẩm
+      
+      // Phân tích doanh thu theo tháng
+      const currentYear = new Date().getFullYear();
+      const revenueByMonth = Array(12).fill(0).map((_, index) => ({
+        month: `Tháng ${index + 1}`,
+        revenue: 0,
+        orders: 0
+      }));
+      
+      allOrders.forEach(order => {
+        const orderDate = new Date(order.orderDate);
+        // Chỉ tính các đơn hàng trong năm hiện tại
+        if (orderDate.getFullYear() === currentYear) {
+          const monthIndex = orderDate.getMonth(); // 0 = January
+          revenueByMonth[monthIndex].revenue += order.total;
+          revenueByMonth[monthIndex].orders += 1;
+        }
+      });
+      
+      // Trả về dữ liệu thống kê
+      res.json({
+        totalOrders,
+        totalRevenue,
+        shippingOrdersCount: shippingOrders.length,
+        newCustomersCount: newCustomers.length,
+        salesByDay,
+        ordersByStatus,
+        topProducts,
+        revenueByMonth,
+        recentOrders: recentOrders.slice(0, 5)
+      });
+    } catch (error) {
+      console.error("Error fetching dashboard stats:", error);
+      res.status(500).json({ message: "Failed to fetch dashboard statistics" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

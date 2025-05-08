@@ -2,33 +2,56 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery } from "@tanstack/react-query";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
-import { Package, Users, Truck, Store, ShoppingCart, BarChart as BarChartIcon } from "lucide-react";
-import { formatCurrency } from "@/lib/utils";
+import { Package, Users, Truck, Store, ShoppingCart, BarChart as BarChartIcon, TrendingUp } from "lucide-react";
+import { formatCurrency, formatDate } from "@/lib/utils";
 import { Link } from "wouter";
 
+interface DashboardStats {
+  totalOrders: number;
+  totalRevenue: number;
+  shippingOrdersCount: number;
+  newCustomersCount: number;
+  salesByDay: { name: string; total: number }[];
+  ordersByStatus: { name: string; value: number }[];
+  topProducts: { id: number; name: string; quantity: number }[];
+  revenueByMonth: { month: string; revenue: number; orders: number }[];
+  recentOrders: any[];
+}
+
 export default function DashboardPage() {
-  const { data: orders, isLoading: ordersLoading } = useQuery({
-    queryKey: ['/api/orders'],
+  // Fetch dashboard statistics
+  const { data: dashboardStats, isLoading: statsLoading } = useQuery<DashboardStats>({
+    queryKey: ['/api/dashboard/stats'],
   });
 
-  // Sample data for charts
-  const salesData = [
-    { name: "T2", total: 8500000 },
-    { name: "T3", total: 12000000 },
-    { name: "T4", total: 6700000 },
-    { name: "T5", total: 9300000 },
-    { name: "T6", total: 14200000 },
-    { name: "T7", total: 21500000 },
-    { name: "CN", total: 10900000 },
-  ];
-
-  const statusData = [
-    { name: "Chờ xử lý", value: 15 },
-    { name: "Đã xác nhận", value: 24 },
-    { name: "Đang giao", value: 18 },
-    { name: "Hoàn tất", value: 42 },
-    { name: "Đã hủy", value: 3 },
-  ];
+  // Hiển thị skeleton khi đang tải
+  if (statsLoading) {
+    return (
+      <div className="container mx-auto space-y-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">Dashboard</h1>
+          <div className="h-10 w-36 rounded-md bg-gray-200 animate-pulse"></div>
+        </div>
+        
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map(i => (
+            <Card key={i}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <div className="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-4 w-4 bg-gray-200 rounded-full animate-pulse"></div>
+              </CardHeader>
+              <CardContent>
+                <div className="h-8 w-16 bg-gray-200 rounded animate-pulse mb-2"></div>
+                <div className="h-3 w-32 bg-gray-200 rounded animate-pulse"></div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        
+        <div className="h-96 bg-gray-200 rounded animate-pulse"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto space-y-6">
@@ -49,9 +72,9 @@ export default function DashboardPage() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{ordersLoading ? "..." : orders?.total || 124}</div>
+            <div className="text-2xl font-bold">{dashboardStats?.totalOrders || 0}</div>
             <p className="text-xs text-muted-foreground">
-              +8% so với tháng trước
+              {dashboardStats?.recentOrders.length || 0} đơn trong 7 ngày qua
             </p>
           </CardContent>
         </Card>
@@ -61,9 +84,9 @@ export default function DashboardPage() {
             <Store className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(165400000)}</div>
+            <div className="text-2xl font-bold">{formatCurrency(dashboardStats?.totalRevenue || 0)}</div>
             <p className="text-xs text-muted-foreground">
-              +12% so với tháng trước
+              Tổng doanh thu từ tất cả đơn hàng
             </p>
           </CardContent>
         </Card>
@@ -73,9 +96,9 @@ export default function DashboardPage() {
             <Truck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">18</div>
+            <div className="text-2xl font-bold">{dashboardStats?.shippingOrdersCount || 0}</div>
             <p className="text-xs text-muted-foreground">
-              5 đơn giao hôm nay
+              Đơn hàng đang trong quá trình vận chuyển
             </p>
           </CardContent>
         </Card>
@@ -85,9 +108,9 @@ export default function DashboardPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+32</div>
+            <div className="text-2xl font-bold">+{dashboardStats?.newCustomersCount || 0}</div>
             <p className="text-xs text-muted-foreground">
-              +18% so với tháng trước
+              Khách hàng mới trong 30 ngày qua
             </p>
           </CardContent>
         </Card>
@@ -106,7 +129,7 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent className="pl-2">
                 <ResponsiveContainer width="100%" height={350}>
-                  <BarChart data={salesData}>
+                  <BarChart data={dashboardStats?.salesByDay || []}>
                     <XAxis
                       dataKey="name"
                       stroke="#888888"
@@ -141,7 +164,7 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={350}>
-                  <BarChart layout="vertical" data={statusData}>
+                  <BarChart layout="vertical" data={dashboardStats?.ordersByStatus || []}>
                     <XAxis type="number" />
                     <YAxis type="category" dataKey="name" />
                     <CartesianGrid strokeDasharray="3 3" />
@@ -157,26 +180,77 @@ export default function DashboardPage() {
               <CardHeader>
                 <CardTitle>Đơn hàng gần đây</CardTitle>
                 <CardDescription>
-                  {ordersLoading ? "Đang tải..." : `${orders?.total || 5} đơn hàng được tạo trong tuần này`}
+                  {dashboardStats?.recentOrders.length || 0} đơn hàng được tạo trong 7 ngày qua
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Link href="/orders">
-                  <a className="text-sm text-primary hover:underline">Xem tất cả đơn hàng →</a>
-                </Link>
+                {dashboardStats?.recentOrders.length ? (
+                  <div className="space-y-3">
+                    {dashboardStats.recentOrders.slice(0, 3).map(order => (
+                      <div key={order.id} className="flex justify-between items-center border-b pb-2">
+                        <div>
+                          <div className="font-medium">{order.orderNumber}</div>
+                          <div className="text-sm text-muted-foreground">{formatDate(order.orderDate)}</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-medium">{formatCurrency(order.total)}</div>
+                          <div className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800">
+                            {order.status === 'pending' ? 'Chờ xử lý' : 
+                             order.status === 'confirmed' ? 'Đã xác nhận' :
+                             order.status === 'shipping' ? 'Đang giao' :
+                             order.status === 'completed' ? 'Hoàn tất' : 'Đã hủy'}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    <Link href="/orders">
+                      <a className="text-sm text-primary hover:underline block pt-2">Xem tất cả đơn hàng →</a>
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-muted-foreground">
+                    Chưa có đơn hàng nào trong 7 ngày qua
+                    <div className="mt-2">
+                      <Link href="/orders">
+                        <a className="text-sm text-primary hover:underline">Xem tất cả đơn hàng →</a>
+                      </Link>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
             <Card className="md:col-span-3">
               <CardHeader>
                 <CardTitle>Sản phẩm bán chạy</CardTitle>
                 <CardDescription>
-                  Top sản phẩm bán chạy trong tháng
+                  Top sản phẩm bán chạy
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Link href="/products">
-                  <a className="text-sm text-primary hover:underline">Xem tất cả sản phẩm →</a>
-                </Link>
+                {dashboardStats?.topProducts && dashboardStats.topProducts.length > 0 ? (
+                  <div className="space-y-3">
+                    {dashboardStats.topProducts.map(product => (
+                      <div key={product.id} className="flex justify-between items-center border-b pb-2">
+                        <div className="font-medium">{product.name}</div>
+                        <div className="text-sm bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                          Đã bán: {product.quantity}
+                        </div>
+                      </div>
+                    ))}
+                    <Link href="/products">
+                      <a className="text-sm text-primary hover:underline block pt-2">Xem tất cả sản phẩm →</a>
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-muted-foreground">
+                    Chưa có dữ liệu sản phẩm bán chạy
+                    <div className="mt-2">
+                      <Link href="/products">
+                        <a className="text-sm text-primary hover:underline">Xem tất cả sản phẩm →</a>
+                      </Link>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
