@@ -142,7 +142,7 @@ export default function NewOrderPage() {
   // Handle product selection
   const handleProductSelect = (value: string, index: number) => {
     const productId = parseInt(value, 10);
-    const selectedProduct = products?.find((p: any) => p.id === productId);
+    const selectedProduct = products?.data?.find((p: any) => p.id === productId);
     
     if (selectedProduct) {
       const updatedItems = [...form.getValues("items")];
@@ -297,7 +297,7 @@ export default function NewOrderPage() {
                                 <SelectValue placeholder="Chọn sản phẩm" />
                               </SelectTrigger>
                               <SelectContent>
-                                {products?.map((product: any) => (
+                                {products?.data?.map((product: any) => (
                                   <SelectItem key={product.id} value={product.id.toString()}>
                                     {product.name} ({product.sku})
                                   </SelectItem>

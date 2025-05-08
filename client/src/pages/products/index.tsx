@@ -263,7 +263,7 @@ export default function ProductsIndex() {
             variant="outline"
             className="gap-2"
             onClick={handleExportExcel}
-            disabled={isLoading || !productsData?.length}
+            disabled={isLoading || !products.length}
           >
             <FileDown className="w-4 h-4" />
             Xuất Excel
