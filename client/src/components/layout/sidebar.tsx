@@ -92,7 +92,7 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
         )}
       >
         <div className="flex items-center justify-center h-16 px-4 bg-primary">
-          <h1 className="text-xl font-bold text-white">Order Manager</h1>
+          <h1 className="text-xl font-bold text-white">TUHO Manager</h1>
         </div>
         <nav className="px-2 py-4 space-y-1">
           {sidebarItems.map((item) => (
