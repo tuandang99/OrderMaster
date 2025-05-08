@@ -106,7 +106,7 @@ export default function NewOrderPage() {
       },
       items: [
         {
-          productId: 0,
+          productId: 0, // Đảm bảo là số nguyên
           quantity: 1,
           price: 0,
         },
@@ -141,14 +141,15 @@ export default function NewOrderPage() {
 
   // Handle product selection
   const handleProductSelect = (value: string, index: number) => {
-    const productId = parseInt(value, 10);
+    // Đảm bảo chuyển đổi thành số nguyên
+    const productId = Number(value);
     const selectedProduct = products?.data?.find((p: any) => p.id === productId);
     
     if (selectedProduct) {
       const updatedItems = [...form.getValues("items")];
       updatedItems[index] = {
         ...updatedItems[index],
-        productId,
+        productId: Number(productId), // Đảm bảo là số nguyên
         price: selectedProduct.price,
       };
       form.setValue("items", updatedItems);
@@ -157,7 +158,21 @@ export default function NewOrderPage() {
 
   // Submit form
   const onSubmit = (data: OrderFormValues) => {
-    createOrderMutation.mutate(data);
+    // Đảm bảo dữ liệu được chuyển đổi đúng kiểu trước khi gửi
+    const formattedData = {
+      ...data,
+      items: data.items.map(item => ({
+        ...item,
+        productId: Number(item.productId),
+        quantity: Number(item.quantity),
+        price: Number(item.price)
+      })),
+      shipping: {
+        ...data.shipping,
+        cost: Number(data.shipping.cost)
+      }
+    };
+    createOrderMutation.mutate(formattedData);
   };
 
   return (
@@ -256,7 +271,7 @@ export default function NewOrderPage() {
                   <Button 
                     type="button" 
                     variant="outline" 
-                    onClick={() => append({ productId: 0, quantity: 1, price: 0 })}
+                    onClick={() => append({ productId: Number(0), quantity: Number(1), price: Number(0) })}
                     className="gap-2"
                   >
                     <PlusCircle className="w-4 h-4" />
