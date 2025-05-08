@@ -494,15 +494,26 @@ export class DatabaseStorage implements IStorage {
       // Đảm bảo mỗi ID sản phẩm là một số nguyên riêng biệt
       console.log("Product IDs before query:", productIds);
       
-      // Sử dụng SQL trực tiếp với mỗi ID được chuyển đổi thành số
-      const productList = await tx
-        .select()
-        .from(products)
-        .where(
-          productIds.length === 1 
-            ? eq(products.id, productIds[0]) 
-            : sql`${products.id} IN (${productIds.map(id => Number(id)).join(',')})`
+      // Sử dụng phương pháp riêng biệt cho mỗi trường hợp để tránh lỗi
+      let productList;
+      if (productIds.length === 1) {
+        // Nếu chỉ có một sản phẩm
+        productList = await tx
+          .select()
+          .from(products)
+          .where(eq(products.id, productIds[0]));
+      } else {
+        // Nếu có nhiều sản phẩm, xử lý từng sản phẩm riêng biệt
+        const queries = productIds.map(productId => 
+          tx.select().from(products).where(eq(products.id, productId))
         );
+        
+        // Thực hiện tất cả các truy vấn
+        const results = await Promise.all(queries);
+        
+        // Ghép kết quả
+        productList = results.flat();
+      }
         
       console.log("Product list fetched:", productList);
       

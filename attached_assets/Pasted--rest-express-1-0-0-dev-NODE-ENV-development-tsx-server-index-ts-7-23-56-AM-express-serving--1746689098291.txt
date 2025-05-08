@@ -1,0 +1,60 @@
+ rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+7:23:56 AM [express] serving on port 5000
+Browserslist: browsers data (caniuse-lite) is 7 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+7:24:12 AM [express] GET /api/shipping-carriers 304 in 2ms :: ["ghn","ghtk","viettel_post","jt_expre…
+7:24:14 AM [express] GET /api/products 200 in 2172ms :: {"data":[{"id":4,"name":"Hạt macca Đăk Lăk s…
+7:24:30 AM [express] GET /api/order-statuses 304 in 1ms :: ["pending","confirmed","shipping","comple…
+7:24:31 AM [express] GET /api/orders 304 in 322ms :: {"orders":[{"id":13,"orderNumber":"ORD-2025-ZC-…
+7:24:31 AM [express] GET /api/dashboard/stats 200 in 164ms :: {"totalOrders":"6","totalRevenue":6195…
+Raw order request body: {"customer":{"name":"dang anh tuan","phone":"0393397304","address":"ưergwe","email":"anhtuancoi99@gmail.com"},"items":[{"productId":1,"quantity":1,"price":155000},{"productId":4,"quantity":1,"price":0}],"shipping":{"cost":30000,"carrier":"viettel_post"},"notes":""}
+Transformed order body: {"customer":{"name":"dang anh tuan","phone":"0393397304","address":"ưergwe","email":"anhtuancoi99@gmail.com"},"items":[{"productId":1,"quantity":1,"price":155000},{"productId":4,"quantity":1,"price":0}],"shipping":{"cost":30000,"carrier":"viettel_post"},"notes":""}
+After Zod parse: {"customer":{"name":"dang anh tuan","phone":"0393397304","address":"ưergwe","email":"anhtuancoi99@gmail.com"},"items":[{"productId":1,"quantity":1,"price":155000},{"productId":4,"quantity":1,"price":0}],"shipping":{"cost":30000,"carrier":"viettel_post"},"notes":""}
+Product IDs before query: [ 1, 4 ]
+Error creating order: error: invalid input syntax for type integer: "1,4"
+    at cn.parseErrorMessage (file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:1182:6)
+    at cn.handlePacket (file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:1143:13)
+    at cn.parse (file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:1127:36)
+    at v.<anonymous> (file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:1190:16)
+    at v.emit (file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:397:12)
+    at WebSocket.<anonymous> (file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:987:80)
+    at callListener (/home/runner/workspace/node_modules/ws/lib/event-target.js:290:14)
+    at WebSocket.onMessage (/home/runner/workspace/node_modules/ws/lib/event-target.js:209:9)
+    at WebSocket.emit (node:events:518:28)
+    at Receiver.receiverOnMessage (/home/runner/workspace/node_modules/ws/lib/websocket.js:1220:20)
+    at Receiver.emit (node:events:518:28)
+    at Receiver.dataMessage (/home/runner/workspace/node_modules/ws/lib/receiver.js:569:14)
+    at Receiver.getData (/home/runner/workspace/node_modules/ws/lib/receiver.js:496:10)
+    at Receiver.startLoop (/home/runner/workspace/node_modules/ws/lib/receiver.js:167:16)
+    at Receiver._write (/home/runner/workspace/node_modules/ws/lib/receiver.js:94:10)
+    at writeOrBuffer (node:internal/streams/writable:572:12)
+    at _write (node:internal/streams/writable:501:10)
+    at Writable.write (node:internal/streams/writable:510:10)
+    at TLSSocket.socketOnData (/home/runner/workspace/node_modules/ws/lib/websocket.js:1355:35)
+    at TLSSocket.emit (node:events:518:28)
+    at addChunk (node:internal/streams/readable:561:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+    at Readable.push (node:internal/streams/readable:392:5)
+    at TLSWrap.onStreamRead (node:internal/stream_base_commons:191:23) {
+  length: 146,
+  severity: 'ERROR',
+  code: '22P02',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: "unnamed portal parameter $1 = '...'",
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'numutils.c',
+  line: '617',
+  routine: 'pg_strtoint32_safe'
+}
+7:24:45 AM [express] POST /api/orders 500 in 501ms :: {"message":"Failed to create order"}
