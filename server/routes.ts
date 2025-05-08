@@ -269,15 +269,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/orders", async (req: Request, res: Response) => {
     try {
+      // Log dữ liệu yêu cầu trước khi xử lý
+      console.log("Raw order request body:", JSON.stringify(req.body));
+      
+      // Chuyển đổi productId sang số trước khi validate
+      if (req.body.items && Array.isArray(req.body.items)) {
+        req.body.items = req.body.items.map((item: any) => ({
+          ...item,
+          productId: Number(item.productId),
+          quantity: Number(item.quantity),
+          price: Number(item.price)
+        }));
+      }
+      
+      // Log sau khi chuyển đổi
+      console.log("Transformed order body:", JSON.stringify(req.body));
+      
       const orderData = createOrderSchema.parse(req.body);
+      
+      // Log sau khi parse qua Zod
+      console.log("After Zod parse:", JSON.stringify(orderData));
       
       // Compute totals
       const subtotal = orderData.items.reduce(
-        (sum, item) => sum + (item.price * item.quantity), 
+        (sum, item) => sum + (Number(item.price) * Number(item.quantity)), 
         0
       );
       
-      const shippingCost = orderData.shipping.cost;
+      const shippingCost = Number(orderData.shipping.cost);
       const total = subtotal + shippingCost;
       
       // Create order using storage
@@ -292,10 +311,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           orderDate: new Date()
         },
         items: orderData.items.map(item => ({
-          productId: item.productId,
-          quantity: item.quantity,
-          price: item.price,
-          subtotal: item.price * item.quantity
+          productId: Number(item.productId),
+          quantity: Number(item.quantity),
+          price: Number(item.price),
+          subtotal: Number(item.price) * Number(item.quantity)
         })),
         shippingInfo: {
           carrier: orderData.shipping.carrier as any,
@@ -306,6 +325,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(order);
     } catch (error) {
       if (error instanceof ZodError) {
+        console.log("Zod validation error:", error.errors);
         return res.status(400).json({ message: "Invalid order data", errors: error.errors });
       }
       console.error("Error creating order:", error);

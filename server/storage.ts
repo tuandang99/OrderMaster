@@ -10,7 +10,7 @@ import {
   users, type User, type InsertUser
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, like, between, desc, and, or, sql, asc } from "drizzle-orm";
+import { eq, like, between, desc, and, or, sql, asc, inArray } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
 // Interface for storage operations
@@ -489,12 +489,23 @@ export class DatabaseStorage implements IStorage {
       }
       
       // Get products for the items
-      const productIds = createdItems.map(item => item.productId);
+      const productIds = createdItems.map(item => Number(item.productId));
+      
+      // Đảm bảo mỗi ID sản phẩm là một số nguyên riêng biệt
+      console.log("Product IDs before query:", productIds);
+      
+      // Sử dụng SQL trực tiếp với mỗi ID được chuyển đổi thành số
       const productList = await tx
         .select()
         .from(products)
-        .where(sql`${products.id} IN (${productIds.join(',')})`);
+        .where(
+          productIds.length === 1 
+            ? eq(products.id, productIds[0]) 
+            : sql`${products.id} IN (${productIds.map(id => Number(id)).join(',')})`
+        );
         
+      console.log("Product list fetched:", productList);
+      
       const productMap = new Map(productList.map(p => [p.id, p]));
       
       // Không cập nhật tồn kho khi tạo đơn hàng, chỉ cập nhật khi đơn hàng được xác nhận
