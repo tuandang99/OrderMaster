@@ -144,8 +144,9 @@ export class DatabaseStorage implements IStorage {
     search?: string;
     page?: number;
     limit?: number;
+    customerId?: number;
   } = {}): Promise<{ orders: OrderWithRelations[]; total: number }> {
-    const { status, dateFrom, dateTo, search, page = 1, limit = 10 } = options;
+    const { status, dateFrom, dateTo, search, page = 1, limit = 10, customerId } = options;
     const offset = (page - 1) * limit;
     
     // Build where conditions based on filters
@@ -161,6 +162,10 @@ export class DatabaseStorage implements IStorage {
       whereConditions.push(sql`${orders.orderDate} >= ${dateFrom}`);
     } else if (dateTo) {
       whereConditions.push(sql`${orders.orderDate} <= ${dateTo}`);
+    }
+    
+    if (customerId) {
+      whereConditions.push(eq(orders.customerId, customerId));
     }
     
     if (search) {

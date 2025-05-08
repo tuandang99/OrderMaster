@@ -105,7 +105,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Orders API
   app.get("/api/orders", async (req: Request, res: Response) => {
     try {
-      const { status, dateFrom, dateTo, search, page, limit } = req.query;
+      const { status, dateFrom, dateTo, search, page, limit, customerId } = req.query;
       
       const options: any = {};
       
@@ -131,6 +131,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (limit && typeof limit === 'string') {
         options.limit = parseInt(limit);
+      }
+      
+      if (customerId && typeof customerId === 'string') {
+        options.customerId = parseInt(customerId);
       }
       
       const { orders, total } = await storage.getOrders(options);
