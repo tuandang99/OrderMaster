@@ -9,24 +9,16 @@ const apiKeys: Record<string, string> = {
   'ghtk': process.env.GHTK_API_KEY || 'demo_api_key_ghtk',
   'viettel_post': process.env.VIETTEL_POST_API_KEY || 'demo_api_key_viettel',
   'jt_express': process.env.JT_EXPRESS_API_KEY || 'demo_api_key_jt',
-  'aftership': process.env.AFTERSHIP_API_KEY || '',
 };
 
 export function registerShippingCarrierRoutes(app: Express) {
   // Lấy danh sách đơn vị vận chuyển được hỗ trợ
   app.get('/api/shipping-carriers/info', (req: Request, res: Response) => {
-    const hasAfterShipIntegration = !!apiKeys['aftership'] && apiKeys['aftership'] !== '';
-    
     const supportedCarriers = [
       { id: 'ghn', name: 'Giao Hàng Nhanh', apiConnected: !!apiKeys['ghn'] && apiKeys['ghn'] !== 'demo_api_key_ghn' },
       { id: 'ghtk', name: 'Giao Hàng Tiết Kiệm', apiConnected: !!apiKeys['ghtk'] && apiKeys['ghtk'] !== 'demo_api_key_ghtk' },
       { id: 'viettel_post', name: 'Viettel Post', apiConnected: !!apiKeys['viettel_post'] && apiKeys['viettel_post'] !== 'demo_api_key_viettel' },
-      { 
-        id: 'jt_express', 
-        name: 'J&T Express', 
-        apiConnected: !!apiKeys['jt_express'] && apiKeys['jt_express'] !== 'demo_api_key_jt',
-        trackingInfo: `Theo dõi qua AfterShip: ${hasAfterShipIntegration ? 'Đã kết nối' : 'Chưa kết nối'}`
-      },
+      { id: 'jt_express', name: 'J&T Express', apiConnected: !!apiKeys['jt_express'] && apiKeys['jt_express'] !== 'demo_api_key_jt' },
     ];
     
     res.json(supportedCarriers);
@@ -89,14 +81,6 @@ export function registerShippingCarrierRoutes(app: Express) {
         return res.status(400).json({ 
           success: false, 
           message: `Đơn vị vận chuyển ${carrier} không được hỗ trợ` 
-        });
-      }
-      
-      // Kiểm tra xem đã cấu hình AfterShip API Key chưa (cho J&T Express)
-      if (carrier === 'jt_express' && (!apiKeys['aftership'] || apiKeys['aftership'] === '')) {
-        return res.status(400).json({
-          success: false,
-          message: 'Chưa cấu hình AfterShip API Key để tra cứu vận đơn J&T Express'
         });
       }
       
