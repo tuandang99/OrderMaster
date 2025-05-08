@@ -59,7 +59,7 @@ const inventoryFormSchema = z.object({
   type: z.enum(['add', 'subtract', 'set'], {
     required_error: "Vui lòng chọn loại thao tác",
   }),
-  quantity: z.number({
+  quantity: z.coerce.number({
     required_error: "Vui lòng nhập số lượng",
     invalid_type_error: "Giá trị phải là số",
   }).min(1, {
@@ -134,7 +134,12 @@ export default function ProductDetailsPage() {
   
   // Xử lý submit form
   const handleInventorySubmit = (values: z.infer<typeof inventoryFormSchema>) => {
-    updateInventoryMutation.mutate(values);
+    // Đảm bảo quantity là số
+    const dataToSubmit = {
+      ...values,
+      quantity: Number(values.quantity)
+    };
+    updateInventoryMutation.mutate(dataToSubmit);
   };
 
   if (isLoading) {
@@ -337,7 +342,12 @@ export default function ProductDetailsPage() {
                           <FormItem>
                             <FormLabel>Số lượng</FormLabel>
                             <FormControl>
-                              <Input type="number" min="0" {...field} />
+                              <Input 
+                                type="number" 
+                                min="0" 
+                                {...field} 
+                                onChange={(e) => field.onChange(Number(e.target.value))}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
