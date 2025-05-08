@@ -322,7 +322,20 @@ export default function NewOrderPage() {
                             <Input
                               type="number"
                               min="1"
-                              {...form.register(`items.${index}.quantity`, { valueAsNumber: true })}
+                              {...form.register(`items.${index}.quantity`, { 
+                                valueAsNumber: true,
+                                onChange: (e) => {
+                                  // Đảm bảo là số
+                                  const quantity = parseInt(e.target.value) || 0;
+                                  // Cập nhật giá trị
+                                  const updatedItems = [...form.getValues("items")];
+                                  updatedItems[index] = {
+                                    ...updatedItems[index],
+                                    quantity: quantity
+                                  };
+                                  form.setValue("items", updatedItems, { shouldValidate: true });
+                                }
+                              })}
                               className="w-20"
                             />
                             {form.formState.errors.items?.[index]?.quantity && (
