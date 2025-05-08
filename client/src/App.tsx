@@ -11,11 +11,13 @@ import Dashboard from "@/pages/dashboard";
 import OrdersIndex from "@/pages/orders/index";
 import NewOrder from "@/pages/orders/new";
 import OrderDetails from "@/pages/orders/[id]";
+import OrderEdit from "@/pages/orders/edit/[id]";
 import ShippingIndex from "@/pages/shipping/index";
 import CustomersIndex from "@/pages/customers/index";
 import CustomerDetails from "@/pages/customers/[id]";
 import ProductsIndex from "@/pages/products/index";
 import ProductDetails from "@/pages/products/[id]";
+import ProductEdit from "@/pages/products/edit/[id]";
 import ReportsIndex from "@/pages/reports/index";
 import SettingsIndex from "@/pages/settings/index";
 
@@ -25,11 +27,13 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/orders" component={OrdersIndex} />
       <Route path="/orders/new" component={NewOrder} />
+      <Route path="/orders/edit/:id" component={OrderEdit} />
       <Route path="/orders/:id" component={OrderDetails} />
       <Route path="/shipping" component={ShippingIndex} />
       <Route path="/customers" component={CustomersIndex} />
       <Route path="/customers/:id" component={CustomerDetails} />
       <Route path="/products" component={ProductsIndex} />
+      <Route path="/products/edit/:id" component={ProductEdit} />
       <Route path="/products/:id" component={ProductDetails} />
       <Route path="/reports" component={ReportsIndex} />
       <Route path="/settings" component={SettingsIndex} />
