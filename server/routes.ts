@@ -110,8 +110,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "ID sản phẩm không hợp lệ" });
       }
 
-      const { stock, type } = req.body;
-      if (typeof stock !== 'number' || !['add', 'subtract', 'set'].includes(type)) {
+      const { quantity, type, note } = req.body;
+      if (typeof quantity !== 'number' || quantity < 0 || !['add', 'subtract', 'set'].includes(type)) {
         return res.status(400).json({ 
           message: "Dữ liệu không hợp lệ",
           allowedTypes: ['add', 'subtract', 'set']
@@ -123,20 +123,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Không tìm thấy sản phẩm" });
       }
 
-      let newStock = product.stock || 0;
+      const currentStock = product.stock || 0;
+      let newStock = currentStock;
+      
       switch (type) {
         case 'add':
-          newStock += stock;
+          newStock = currentStock + quantity;
           break;
         case 'subtract':
-          newStock = Math.max(0, newStock - stock);
+          newStock = Math.max(0, currentStock - quantity);
           break;
         case 'set':
-          newStock = Math.max(0, stock);
+          newStock = Math.max(0, quantity);
           break;
       }
 
       const updatedProduct = await storage.updateProduct(id, { stock: newStock });
+      
+      // Lưu lịch sử nhập xuất kho
+      await storage.createInventoryHistory({
+        productId: id,
+        type,
+        quantity,
+        previousStock: currentStock,
+        newStock,
+        note
+      });
+      
       res.json(updatedProduct);
     } catch (error) {
       console.error("Error updating inventory:", error);

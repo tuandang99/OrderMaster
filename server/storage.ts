@@ -1,10 +1,11 @@
 import { 
-  customers, products, orders, orderItems, shipping,
+  customers, products, orders, orderItems, shipping, inventoryHistory,
   type Customer, type InsertCustomer,
   type Product, type InsertProduct,
   type Order, type InsertOrder,
   type OrderItem, type InsertOrderItem,
   type Shipping, type InsertShipping,
+  type InventoryHistory, type InsertInventoryHistory,
   type OrderWithRelations,
   users, type User, type InsertUser
 } from "@shared/schema";
@@ -32,6 +33,17 @@ export interface IStorage {
   getProductBySku(sku: string): Promise<Product | undefined>;
   createProduct(product: InsertProduct): Promise<Product>;
   updateProduct(id: number, product: Partial<InsertProduct>): Promise<Product | undefined>;
+  
+  // Inventory operations
+  getInventoryHistory(productId: number): Promise<InventoryHistory[]>;
+  createInventoryHistory(data: {
+    productId: number;
+    type: string;
+    quantity: number;
+    previousStock: number;
+    newStock: number;
+    note?: string;
+  }): Promise<InventoryHistory>;
   
   // Order operations
   getOrders(options?: { 
@@ -139,6 +151,37 @@ export class DatabaseStorage implements IStorage {
       .where(eq(products.id, id))
       .returning();
     return updatedProduct;
+  }
+  
+  // Inventory History operations
+  async getInventoryHistory(productId: number): Promise<InventoryHistory[]> {
+    return await db
+      .select()
+      .from(inventoryHistory)
+      .where(eq(inventoryHistory.productId, productId))
+      .orderBy(desc(inventoryHistory.createdAt));
+  }
+  
+  async createInventoryHistory(data: {
+    productId: number;
+    type: string;
+    quantity: number;
+    previousStock: number;
+    newStock: number;
+    note?: string;
+  }): Promise<InventoryHistory> {
+    const [record] = await db
+      .insert(inventoryHistory)
+      .values({
+        productId: data.productId,
+        type: data.type,
+        quantity: data.quantity,
+        previousStock: data.previousStock,
+        newStock: data.newStock,
+        note: data.note || '',
+      })
+      .returning();
+    return record;
   }
 
   // Order operations

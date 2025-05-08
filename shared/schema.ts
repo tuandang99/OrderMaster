@@ -206,6 +206,9 @@ export type InsertOrderItem = typeof orderItems.$inferInsert;
 export type Shipping = typeof shipping.$inferSelect;
 export type InsertShipping = typeof shipping.$inferInsert;
 
+export type InventoryHistory = typeof inventoryHistory.$inferSelect;
+export type InsertInventoryHistory = typeof inventoryHistory.$inferInsert;
+
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;
 
 export type OrderWithRelations = Order & {
