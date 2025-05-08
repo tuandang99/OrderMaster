@@ -407,6 +407,17 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return updatedShipping;
   }
+
+  async deleteOrder(id: number): Promise<void> {
+    await db.transaction(async (tx) => {
+      // Delete shipping info first due to foreign key constraint
+      await tx.delete(shipping).where(eq(shipping.orderId, id));
+      // Delete order items
+      await tx.delete(orderItems).where(eq(orderItems.orderId, id));
+      // Delete the order
+      await tx.delete(orders).where(eq(orders.id, id));
+    });
+  }
 }
 
 export const storage = new DatabaseStorage();

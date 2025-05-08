@@ -303,6 +303,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(shippingCarrierEnum.enumValues);
   });
 
+  // Delete order endpoint
+  app.delete("/api/orders/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID đơn hàng không hợp lệ" });
+      }
+      
+      await storage.deleteOrder(id);
+      res.json({ message: "Đã xóa đơn hàng thành công" });
+    } catch (error) {
+      console.error("Error deleting order:", error);
+      res.status(500).json({ message: "Không thể xóa đơn hàng" });
+    }
+  });
+
   // API cho Dashboard
   app.get("/api/dashboard/stats", async (req: Request, res: Response) => {
     try {

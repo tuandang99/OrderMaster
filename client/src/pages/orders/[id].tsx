@@ -1,7 +1,18 @@
 import { useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { ArrowLeft, Printer, Download, FileDown, AlertCircle, Check, Truck, Clock, XCircle } from "lucide-react";
+import { ArrowLeft, Printer, Download, FileDown, AlertCircle, Check, Truck, Clock, XCircle, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -210,6 +221,30 @@ export default function OrderDetailsPage() {
     }
   };
 
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest("DELETE", `/api/orders/${orderId}`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Xóa đơn hàng thành công",
+        description: "Đơn hàng đã được xóa khỏi hệ thống",
+      });
+      navigate("/orders");
+    },
+    onError: (error) => {
+      toast({
+        title: "Lỗi",
+        description: "Không thể xóa đơn hàng. Vui lòng thử lại sau.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleDeleteOrder = () => {
+    deleteMutation.mutate();
+  };
+
   // Render loading state
   if (isLoading) {
     return (
@@ -286,6 +321,26 @@ export default function OrderDetailsPage() {
             <ArrowLeft className="w-4 h-4" />
             Chỉnh sửa đơn hàng
           </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" className="gap-2">
+                <Trash2 className="w-4 h-4" />
+                Xóa đơn hàng
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Xác nhận xóa đơn hàng</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Bạn có chắc chắn muốn xóa đơn hàng #{order.orderNumber}? Hành động này không thể hoàn tác.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Hủy</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteOrder}>Xóa</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
           <Select
             value={order.status}
             onValueChange={handleStatusChange}
