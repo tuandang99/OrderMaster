@@ -100,14 +100,15 @@ export default function ProductDetailsPage() {
   // Mutation cập nhật kho
   const updateInventoryMutation = useMutation({
     mutationFn: async (data: z.infer<typeof inventoryFormSchema>) => {
-      return await apiRequest(`/api/products/${productId}/inventory`, {
-        method: 'PATCH',
-        body: JSON.stringify({
+      return await apiRequest(
+        'PATCH',
+        `/api/products/${productId}/inventory`,
+        {
           type: data.type,
           quantity: data.quantity,
           note: data.note || ''
-        }),
-      });
+        }
+      );
     },
     onSuccess: () => {
       toast({
