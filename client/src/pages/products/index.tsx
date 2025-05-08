@@ -57,7 +57,18 @@ export default function ProductsIndex() {
     isLoading,
     isError,
   } = useQuery({
-    queryKey: ["/api/products"],
+    queryKey: ["/api/products", { search: searchValue, page, limit: 10 }],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (searchValue) params.append("search", searchValue);
+      if (page) params.append("page", page.toString());
+      params.append("limit", "10");
+      
+      const url = `/api/products${params.toString() ? `?${params.toString()}` : ''}`;
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("Network response was not ok");
+      return response.json();
+    }
   });
 
   // Create product mutation
@@ -162,9 +173,9 @@ export default function ProductsIndex() {
 
   // Export products to Excel
   const handleExportExcel = () => {
-    if (!productsData) return;
+    if (!productsData?.data) return;
     
-    const exportData = productsData.map((product: any) => ({
+    const exportData = productsData.data.map((product: any) => ({
       'Tên sản phẩm': product.name,
       'Mã SKU': product.sku,
       'Giá': formatCurrency(product.price),
@@ -180,25 +191,10 @@ export default function ProductsIndex() {
     });
   };
 
-  // Filter products based on search value
-  const filteredProducts = productsData
-    ? productsData.filter((product: any) => {
-        const searchLower = searchValue.toLowerCase();
-        return (
-          product.name.toLowerCase().includes(searchLower) ||
-          product.sku.toLowerCase().includes(searchLower) ||
-          (product.description && product.description.toLowerCase().includes(searchLower))
-        );
-      })
-    : [];
-
-  // Calculate pagination
+  // Get products and pagination info from server
+  const products = productsData?.data || [];
+  const totalItems = productsData?.total || 0;
   const itemsPerPage = 10;
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-  const paginatedProducts = filteredProducts.slice(
-    (page - 1) * itemsPerPage,
-    page * itemsPerPage
-  );
 
   const columns = [
     {
@@ -310,17 +306,17 @@ export default function ProductsIndex() {
           <>
             <DataTable
               columns={columns}
-              data={paginatedProducts}
+              data={products}
               noDataMessage={searchValue ? "Không tìm thấy sản phẩm phù hợp" : "Chưa có sản phẩm nào"}
             />
-            {filteredProducts.length > 0 && (
+            {products.length > 0 && (
               <div className="flex items-center justify-between mt-6 px-2">
                 <p className="text-sm text-gray-700">
-                  Hiển thị <span className="font-medium">{Math.min(itemsPerPage, filteredProducts.length)}</span> trong{" "}
-                  <span className="font-medium">{filteredProducts.length}</span> sản phẩm
+                  Hiển thị <span className="font-medium">{Math.min(itemsPerPage, products.length)}</span> trong{" "}
+                  <span className="font-medium">{totalItems}</span> sản phẩm
                 </p>
                 <Pagination
-                  totalItems={filteredProducts.length}
+                  totalItems={totalItems}
                   itemsPerPage={itemsPerPage}
                   currentPage={page}
                   onPageChange={handlePageChange}
