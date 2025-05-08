@@ -282,6 +282,10 @@ export default function OrderDetailsPage() {
             <FileDown className="w-4 h-4" />
             Xuất PDF
           </Button>
+          <Button variant="outline" className="gap-2" onClick={() => navigate(`/orders/edit/${order.id}`)}>
+            <ArrowLeft className="w-4 h-4" />
+            Chỉnh sửa đơn hàng
+          </Button>
           <Select
             value={order.status}
             onValueChange={handleStatusChange}
