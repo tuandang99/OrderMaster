@@ -211,6 +211,15 @@ export default function ProductsIndex() {
       cell: ({ row }) => formatCurrency(row.original.price),
     },
     {
+      accessorKey: "stock",
+      header: "Tồn kho",
+      cell: ({ row }) => (
+        <div className={row.original.stock <= 10 ? "text-destructive font-medium" : ""}>
+          {row.original.stock || 0} sản phẩm
+        </div>
+      ),
+    },
+    {
       accessorKey: "description",
       header: "Mô tả",
       cell: ({ row }) => (
