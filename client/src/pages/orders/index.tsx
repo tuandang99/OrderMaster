@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { apiRequest } from "@/lib/queryClient";
-import { cn, formatCurrency, formatDate, orderStatusColors, orderStatusTranslations, exportToExcel } from "@/lib/utils";
+import { cn, formatCurrency, formatDate, orderStatusColors, orderStatusTranslations, carrierTranslations, exportToExcel } from "@/lib/utils";
 import { queryClient } from "@/lib/queryClient";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
