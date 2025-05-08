@@ -274,7 +274,7 @@ export default function EditOrderPage() {
           <div>
             <h1 className="text-2xl font-bold">Chỉnh sửa đơn hàng</h1>
             <p className="text-sm text-muted-foreground">
-              {order.orderNumber} - {order.customer.name}
+              {order?.orderNumber} {order?.customer?.name ? `- ${order.customer.name}` : ''}
             </p>
           </div>
         </div>
