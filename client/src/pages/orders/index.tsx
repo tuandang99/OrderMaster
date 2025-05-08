@@ -178,7 +178,7 @@ export default function OrdersIndex() {
             'Số lượng SP': order.items.reduce((total, item) => total + item.quantity, 0),
             'Tổng tiền': formatCurrency(order.total),
             'Trạng thái': orderStatusTranslations[order.status] || order.status,
-            'Đơn vị vận chuyển': carrierTranslations[order.shipping?.carrier] || order.shipping?.carrier || 'Chưa có',
+            'Đơn vị vận chuyển': order.shipping?.carrier || 'Chưa có',
             'Mã vận đơn': order.shipping?.trackingNumber || 'Chưa có',
             'Mã sản phẩm': item.product.sku,
             'Tên sản phẩm': item.product.name,
