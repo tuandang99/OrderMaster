@@ -1,5 +1,6 @@
 import fetch from 'node-fetch';
 import { log } from './vite';
+import { createAfterShipService } from './aftership-service';
 
 // Các cài đặt cho các API vận chuyển
 type ShippingApiConfig = {
@@ -165,6 +166,33 @@ class ShippingCarrierApi {
    * @param trackingNumber Mã vận đơn
    */
   async trackShipment(trackingNumber: string): Promise<ShippingApiResponse> {
+    // Sử dụng AfterShip cho J&T Express
+    if (this.carrier === 'jt_express') {
+      try {
+        // Sử dụng API key của AfterShip từ biến môi trường
+        const afterShipApiKey = process.env.AFTERSHIP_API_KEY;
+        
+        if (!afterShipApiKey) {
+          return {
+            success: false,
+            message: "Chưa cấu hình AfterShip API key cho theo dõi đơn hàng J&T Express"
+          };
+        }
+        
+        log(`Sử dụng AfterShip để theo dõi mã vận đơn ${trackingNumber} của J&T Express`, 'shipping-api');
+        
+        const afterShipService = createAfterShipService(afterShipApiKey);
+        return await afterShipService.trackShipment(trackingNumber, 'jnt');
+      } catch (error: any) {
+        log(`Lỗi khi sử dụng AfterShip: ${error.message}`, 'shipping-api');
+        return {
+          success: false,
+          message: `Lỗi khi theo dõi vận đơn qua AfterShip: ${error.message}`
+        };
+      }
+    }
+    
+    // Sử dụng API của các đơn vị vận chuyển khác
     let endpoint: string;
 
     if (this.carrier === 'ghn') {
@@ -173,8 +201,6 @@ class ShippingCarrierApi {
       endpoint = `/services/shipment/v2/${trackingNumber}`;
     } else if (this.carrier === 'viettel_post') {
       endpoint = `/order/tracking?order_number=${trackingNumber}`;
-    } else if (this.carrier === 'jt_express') {
-      endpoint = `/v1/tracking/${trackingNumber}`;
     } else {
       return {
         success: false,

@@ -50,7 +50,7 @@ export class AfterShipService {
         }
       });
       
-      const data = await response.json();
+      const data = await response.json() as any;
       
       if (!response.ok) {
         log(`Lỗi từ AfterShip API: ${response.status} - ${JSON.stringify(data)}`, 'aftership');
@@ -101,7 +101,7 @@ export class AfterShipService {
         })
       });
       
-      const data = await response.json();
+      const data = await response.json() as any;
       
       if (!response.ok) {
         log(`Lỗi khi tạo theo dõi vận đơn trên AfterShip: ${response.status} - ${JSON.stringify(data)}`, 'aftership');
@@ -152,7 +152,7 @@ export class AfterShipService {
         };
       }
       
-      const data = await response.json();
+      const data = await response.json() as any;
       
       if (!response.ok) {
         log(`Lỗi khi kiểm tra vận đơn trên AfterShip: ${response.status} - ${JSON.stringify(data)}`, 'aftership');
