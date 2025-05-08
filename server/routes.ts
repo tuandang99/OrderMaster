@@ -464,7 +464,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { orders: allOrders, total: totalOrders } = await storage.getOrders();
       
       // Lấy tất cả khách hàng
-      const customers = await storage.getCustomers();
+      const { data: customers } = await storage.getCustomers();
       
       // Đơn hàng theo trạng thái
       const pendingOrders = allOrders.filter(order => order.status === 'pending');

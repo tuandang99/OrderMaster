@@ -57,7 +57,18 @@ export default function CustomersIndex() {
     isLoading,
     isError,
   } = useQuery({
-    queryKey: ["/api/customers"],
+    queryKey: ["/api/customers", { search: searchValue, page, limit: 10 }],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (searchValue) params.append("search", searchValue);
+      if (page) params.append("page", page.toString());
+      params.append("limit", "10");
+      
+      const url = `/api/customers${params.toString() ? `?${params.toString()}` : ''}`;
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("Network response was not ok");
+      return response.json();
+    }
   });
 
   // Create customer mutation
@@ -162,9 +173,9 @@ export default function CustomersIndex() {
 
   // Export customers to Excel
   const handleExportExcel = () => {
-    if (!customersData) return;
+    if (!customersData?.data) return;
     
-    const exportData = customersData.map((customer: any) => ({
+    const exportData = customersData.data.map((customer: any) => ({
       'Tên khách hàng': customer.name,
       'Số điện thoại': customer.phone,
       'Email': customer.email || "",
@@ -180,25 +191,10 @@ export default function CustomersIndex() {
     });
   };
 
-  // Filter customers based on search value
-  const filteredCustomers = customersData
-    ? customersData.filter((customer: any) => {
-        const searchLower = searchValue.toLowerCase();
-        return (
-          customer.name.toLowerCase().includes(searchLower) ||
-          customer.phone.toLowerCase().includes(searchLower) ||
-          (customer.email && customer.email.toLowerCase().includes(searchLower))
-        );
-      })
-    : [];
-
-  // Calculate pagination
+  // Get customers and pagination info from server
+  const customers = customersData?.data || [];
+  const totalItems = customersData?.total || 0;
   const itemsPerPage = 10;
-  const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
-  const paginatedCustomers = filteredCustomers.slice(
-    (page - 1) * itemsPerPage,
-    page * itemsPerPage
-  );
 
   const columns = [
     {
@@ -267,7 +263,7 @@ export default function CustomersIndex() {
             variant="outline"
             className="gap-2"
             onClick={handleExportExcel}
-            disabled={isLoading || !customersData?.length}
+            disabled={isLoading || !customers?.length}
           >
             <FileDown className="w-4 h-4" />
             Xuất Excel
@@ -310,17 +306,17 @@ export default function CustomersIndex() {
           <>
             <DataTable
               columns={columns}
-              data={paginatedCustomers}
+              data={customers}
               noDataMessage={searchValue ? "Không tìm thấy khách hàng phù hợp" : "Chưa có khách hàng nào"}
             />
-            {filteredCustomers.length > 0 && (
+            {customers.length > 0 && (
               <div className="flex items-center justify-between mt-6 px-2">
                 <p className="text-sm text-gray-700">
-                  Hiển thị <span className="font-medium">{Math.min(itemsPerPage, filteredCustomers.length)}</span> trong{" "}
-                  <span className="font-medium">{filteredCustomers.length}</span> khách hàng
+                  Hiển thị <span className="font-medium">{Math.min(itemsPerPage, customers.length)}</span> trong{" "}
+                  <span className="font-medium">{totalItems}</span> khách hàng
                 </p>
                 <Pagination
-                  totalItems={filteredCustomers.length}
+                  totalItems={totalItems}
                   itemsPerPage={itemsPerPage}
                   currentPage={page}
                   onPageChange={handlePageChange}
