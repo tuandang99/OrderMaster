@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { useParams, useLocation } from 'wouter';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { 
   Card, 
   CardContent, 
@@ -11,7 +12,37 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { formatCurrency } from '@/lib/utils';
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage
+} from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from '@/lib/queryClient';
+import { formatCurrency, formatDate, cn } from '@/lib/utils';
 import {
   ArrowLeft,
   Package2,
@@ -19,18 +50,88 @@ import {
   DollarSign,
   ShoppingCart,
   ClipboardEdit,
-  Archive
+  Archive,
+  Loader2
 } from 'lucide-react';
+
+// Schema cho form quản lý kho
+const inventoryFormSchema = z.object({
+  type: z.enum(['add', 'subtract', 'set'], {
+    required_error: "Vui lòng chọn loại thao tác",
+  }),
+  quantity: z.number({
+    required_error: "Vui lòng nhập số lượng",
+    invalid_type_error: "Giá trị phải là số",
+  }).min(1, {
+    message: "Số lượng phải lớn hơn 0",
+  }),
+  note: z.string().optional(),
+});
 
 export default function ProductDetailsPage() {
   const [, setLocation] = useLocation();
   const { id } = useParams();
+  const { toast } = useToast();
   const productId = parseInt(id);
-
+  const [isInventoryDialogOpen, setIsInventoryDialogOpen] = useState(false);
+  
+  // Lấy thông tin sản phẩm
   const { data: product, isLoading, error } = useQuery({
     queryKey: ['/api/products', productId],
     enabled: !!productId && !isNaN(productId),
   });
+  
+  // Lấy lịch sử nhập xuất kho
+  const { data: inventoryHistory = [] } = useQuery({
+    queryKey: ['/api/products', productId, 'inventory-history'],
+    enabled: !!productId && !isNaN(productId),
+  });
+  
+  // Form quản lý kho
+  const inventoryForm = useForm<z.infer<typeof inventoryFormSchema>>({
+    resolver: zodResolver(inventoryFormSchema),
+    defaultValues: {
+      type: 'add',
+      quantity: 1,
+      note: '',
+    },
+  });
+  
+  // Mutation cập nhật kho
+  const updateInventoryMutation = useMutation({
+    mutationFn: async (data: z.infer<typeof inventoryFormSchema>) => {
+      return await apiRequest(`/api/products/${productId}/inventory`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Thành công",
+        description: "Đã cập nhật thông tin kho",
+      });
+      setIsInventoryDialogOpen(false);
+      inventoryForm.reset({
+        type: 'add',
+        quantity: 1,
+        note: '',
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/products', productId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/products', productId, 'inventory-history'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Lỗi",
+        description: `Không thể cập nhật kho: ${(error as Error).message}`,
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Xử lý submit form
+  const handleInventorySubmit = (values: z.infer<typeof inventoryFormSchema>) => {
+    updateInventoryMutation.mutate(values);
+  };
 
   if (isLoading) {
     return (
