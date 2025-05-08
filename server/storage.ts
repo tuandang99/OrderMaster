@@ -397,36 +397,7 @@ export class DatabaseStorage implements IStorage {
         
       const productMap = new Map(productList.map(p => [p.id, p]));
       
-      // Cập nhật tồn kho sản phẩm
-      for (const item of createdItems) {
-        const product = productMap.get(item.productId);
-        if (product) {
-          const previousStock = product.stock;
-          const newStock = Math.max(0, previousStock - item.quantity);
-          
-          // Cập nhật số lượng tồn kho
-          await tx
-            .update(products)
-            .set({ 
-              stock: newStock,
-              updatedAt: new Date()
-            })
-            .where(eq(products.id, item.productId));
-          
-          // Thêm lịch sử tồn kho
-          await tx
-            .insert(inventoryHistory)
-            .values({
-              productId: item.productId,
-              type: 'subtract',
-              quantity: item.quantity,
-              previousStock,
-              newStock,
-              note: `Trừ kho từ đơn hàng #${order.orderNumber}`,
-              createdAt: new Date()
-            });
-        }
-      }
+      // Không cập nhật tồn kho khi tạo đơn hàng, chỉ cập nhật khi đơn hàng được xác nhận
       
       // Build the full order with relations
       return {

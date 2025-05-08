@@ -296,9 +296,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const order = await storage.updateOrderStatus(id, status);
-      if (!order) {
+      // Lấy thông tin đơn hàng trước khi cập nhật
+      const orderBefore = await storage.getOrderById(id);
+      if (!orderBefore) {
         return res.status(404).json({ message: "Order not found" });
+      }
+      
+      // Cập nhật trạng thái đơn hàng
+      const order = await storage.updateOrderStatus(id, status);
+      
+      // Nếu đơn hàng được cập nhật sang trạng thái "confirmed" và trước đó không phải là "confirmed"
+      if (status === 'confirmed' && orderBefore.status !== 'confirmed') {
+        // Lấy chi tiết đơn hàng
+        const orderItems = orderBefore.items;
+        
+        // Cập nhật tồn kho cho mỗi sản phẩm trong đơn hàng
+        for (const item of orderItems) {
+          // Lấy thông tin sản phẩm hiện tại
+          const product = await storage.getProductById(item.productId);
+          if (product) {
+            const previousStock = product.stock;
+            const newStock = Math.max(0, previousStock - item.quantity);
+            
+            // Cập nhật số lượng tồn kho
+            await storage.updateProduct(item.productId, { 
+              stock: newStock 
+            });
+            
+            // Thêm lịch sử tồn kho
+            await storage.createInventoryHistory({
+              productId: item.productId,
+              type: 'subtract',
+              quantity: item.quantity,
+              previousStock,
+              newStock,
+              note: `Trừ kho từ đơn hàng #${orderBefore.orderNumber} (đã xác nhận)`
+            });
+          }
+        }
       }
       
       res.json(order);
