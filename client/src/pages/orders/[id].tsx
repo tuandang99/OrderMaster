@@ -226,6 +226,9 @@ export default function OrderDetailsPage() {
       return await apiRequest("DELETE", `/api/orders/${order.id}`);
     },
     onSuccess: () => {
+      // Refresh orders list and dashboard stats
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       toast({
         title: "Xóa đơn hàng thành công",
         description: "Đơn hàng đã được xóa khỏi hệ thống",
