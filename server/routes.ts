@@ -191,7 +191,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           subtotal: item.price * item.quantity
         })),
         shippingInfo: {
-          carrier: orderData.shipping.carrier,
+          carrier: orderData.shipping.carrier as any,
           status: 'pending'
         }
       });

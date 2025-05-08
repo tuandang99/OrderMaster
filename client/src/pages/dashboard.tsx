@@ -266,14 +266,7 @@ export default function DashboardPage() {
             <CardContent className="pl-2">
               <ResponsiveContainer width="100%" height={400}>
                 <LineChart
-                  data={[
-                    { month: "Tháng 1", revenue: 120000000, orders: 60 },
-                    { month: "Tháng 2", revenue: 145000000, orders: 85 },
-                    { month: "Tháng 3", revenue: 135000000, orders: 70 },
-                    { month: "Tháng 4", revenue: 180000000, orders: 90 },
-                    { month: "Tháng 5", revenue: 165000000, orders: 82 },
-                  ]}
-                >
+                  data={dashboardStats?.revenueByMonth || []}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="month" />
                   <YAxis yAxisId="left" orientation="left" stroke="#4F46E5" />
