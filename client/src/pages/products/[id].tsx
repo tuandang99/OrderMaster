@@ -77,13 +77,13 @@ export default function ProductDetailsPage() {
   
   // Lấy thông tin sản phẩm
   const { data: product, isLoading, error } = useQuery({
-    queryKey: ['/api/products', productId],
+    queryKey: [`/api/products/${productId}`],
     enabled: !!productId && !isNaN(productId),
   });
   
   // Lấy lịch sử nhập xuất kho
   const { data: inventoryHistory = [] } = useQuery({
-    queryKey: ['/api/products', productId, 'inventory-history'],
+    queryKey: [`/api/products/${productId}/inventory-history`],
     enabled: !!productId && !isNaN(productId),
   });
   
@@ -120,8 +120,8 @@ export default function ProductDetailsPage() {
         quantity: 1,
         note: '',
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/products', productId] });
-      queryClient.invalidateQueries({ queryKey: ['/api/products', productId, 'inventory-history'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/products/${productId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/products/${productId}/inventory-history`] });
     },
     onError: (error) => {
       toast({
