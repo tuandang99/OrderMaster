@@ -142,23 +142,59 @@ export default function OrdersIndex() {
   const handleExportExcel = () => {
     if (!ordersData?.orders) return;
     
-    const exportData = ordersData.orders.map((order) => ({
-      'Mã đơn hàng': order.orderNumber,
-      'Khách hàng': order.customer.name,
-      'SĐT': order.customer.phone,
-      'Ngày đặt hàng': formatDate(order.orderDate),
-      'Số sản phẩm': order.items.reduce((total, item) => total + item.quantity, 0),
-      'Tổng tiền': formatCurrency(order.total),
-      'Trạng thái': orderStatusTranslations[order.status] || order.status,
-      'Vận chuyển': order.shipping?.carrier || 'Chưa có',
-      'Mã vận đơn': order.shipping?.trackingNumber || 'Chưa có',
-    }));
+    // Tạo mảng các đơn hàng với các sản phẩm được trải phẳng
+    let exportData = [];
     
-    exportToExcel(exportData, 'Danh_sach_don_hang');
+    // Duyệt qua từng đơn hàng
+    ordersData.orders.forEach((order) => {
+      // Nếu đơn hàng không có sản phẩm, thêm một dòng cơ bản
+      if (!order.items || order.items.length === 0) {
+        exportData.push({
+          'Mã đơn hàng': order.orderNumber,
+          'Khách hàng': order.customer.name,
+          'SĐT': order.customer.phone,
+          'Địa chỉ': order.customer.address,
+          'Ngày đặt hàng': formatDate(order.orderDate),
+          'Số lượng SP': 0,
+          'Tổng tiền': formatCurrency(order.total),
+          'Trạng thái': orderStatusTranslations[order.status] || order.status,
+          'Đơn vị vận chuyển': carrierTranslations[order.shipping?.carrier] || order.shipping?.carrier || 'Chưa có',
+          'Mã vận đơn': order.shipping?.trackingNumber || 'Chưa có',
+          'Mã sản phẩm': '',
+          'Tên sản phẩm': '',
+          'Đơn giá': '',
+          'Số lượng': '',
+          'Thành tiền': '',
+        });
+      } else {
+        // Nếu đơn hàng có sản phẩm, thêm mỗi sản phẩm như một dòng riêng
+        order.items.forEach((item, index) => {
+          exportData.push({
+            'Mã đơn hàng': order.orderNumber,
+            'Khách hàng': order.customer.name,
+            'SĐT': order.customer.phone,
+            'Địa chỉ': order.customer.address,
+            'Ngày đặt hàng': formatDate(order.orderDate),
+            'Số lượng SP': order.items.reduce((total, item) => total + item.quantity, 0),
+            'Tổng tiền': formatCurrency(order.total),
+            'Trạng thái': orderStatusTranslations[order.status] || order.status,
+            'Đơn vị vận chuyển': carrierTranslations[order.shipping?.carrier] || order.shipping?.carrier || 'Chưa có',
+            'Mã vận đơn': order.shipping?.trackingNumber || 'Chưa có',
+            'Mã sản phẩm': item.product.sku,
+            'Tên sản phẩm': item.product.name,
+            'Đơn giá': formatCurrency(item.price),
+            'Số lượng': item.quantity,
+            'Thành tiền': formatCurrency(item.subtotal),
+          });
+        });
+      }
+    });
+    
+    exportToExcel(exportData, 'Danh_sach_don_hang_chi_tiet');
     
     toast({
       title: "Xuất file thành công",
-      description: "Danh sách đơn hàng đã được xuất ra file Excel",
+      description: "Danh sách đơn hàng và chi tiết sản phẩm đã được xuất ra file Excel",
     });
   };
 
