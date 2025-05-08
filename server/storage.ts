@@ -113,8 +113,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getProductById(id: number): Promise<Product | undefined> {
-    const [product] = await db.select().from(products).where(eq(products.id, id));
-    return product;
+    try {
+      const [product] = await db.select().from(products).where(eq(products.id, id));
+      return product;
+    } catch (error) {
+      console.error('Error fetching product:', error);
+      return undefined;
+    }
   }
 
   async getProductBySku(sku: string): Promise<Product | undefined> {

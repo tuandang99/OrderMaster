@@ -1,4 +1,4 @@
-import { useParams, Link, useLocation } from 'wouter';
+import { useParams, useLocation } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import { 
   Card, 
@@ -78,18 +78,18 @@ export default function ProductDetailsPage() {
 
   if (error || !product) {
     return (
-      <div className="container py-6">
-        <Card className="mx-auto max-w-md">
+      <div className="container py-8">
+        <Card className="max-w-md mx-auto">
           <CardHeader>
             <CardTitle>Lỗi</CardTitle>
             <CardDescription>
-              Không tìm thấy sản phẩm hoặc có lỗi khi tải dữ liệu
+              {error ? `Lỗi: ${(error as Error).message}` : 'Không thể tải thông tin sản phẩm'}
             </CardDescription>
           </CardHeader>
           <CardFooter>
             <Button onClick={() => setLocation('/products')}>
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Quay lại danh sách sản phẩm
+              Quay lại danh sách
             </Button>
           </CardFooter>
         </Card>
@@ -211,7 +211,7 @@ export default function ProductDetailsPage() {
               </Button>
             </CardFooter>
           </Card>
-          
+
           <Card>
             <CardHeader>
               <CardTitle>Biến thể sản phẩm</CardTitle>
