@@ -169,10 +169,150 @@ export default function ProductDetailsPage() {
             </div>
           </CardContent>
           <CardFooter className="flex justify-between">
-            <Button variant="outline" className="w-full mr-2" onClick={() => setLocation('/products')}>
+            <Button
+              variant="outline"
+              className="w-full mr-2"
+              onClick={() => setIsInventoryDialogOpen(true)}
+            >
               <Archive className="mr-2 h-4 w-4" />
               Quản lý kho
             </Button>
+
+            <Dialog open={isInventoryDialogOpen} onOpenChange={setIsInventoryDialogOpen}>
+              <DialogContent className="sm:max-w-[500px]">
+                <DialogHeader>
+                  <DialogTitle>Quản lý tồn kho</DialogTitle>
+                  <DialogDescription>
+                    Cập nhật số lượng tồn kho cho sản phẩm
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <div className="space-y-6 py-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">Tồn kho hiện tại</p>
+                      <p className="text-2xl font-bold">{product.stock || 0}</p>
+                    </div>
+                    {product.stock <= (product.lowStockAlert || 10) && (
+                      <Badge variant="destructive">
+                        Sắp hết hàng
+                      </Badge>
+                    )}
+                  </div>
+
+                  <Separator />
+
+                  <Form {...inventoryForm}>
+                    <form onSubmit={inventoryForm.handleSubmit(handleInventorySubmit)} className="space-y-4">
+                      <FormField
+                        control={inventoryForm.control}
+                        name="type"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Loại thao tác</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Chọn loại thao tác" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="add">Nhập kho</SelectItem>
+                                <SelectItem value="subtract">Xuất kho</SelectItem>
+                                <SelectItem value="set">Đặt số lượng</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={inventoryForm.control}
+                        name="quantity"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Số lượng</FormLabel>
+                            <FormControl>
+                              <Input type="number" min="0" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={inventoryForm.control}
+                        name="note"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Ghi chú</FormLabel>
+                            <FormControl>
+                              <Textarea {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </form>
+                  </Form>
+
+                  <div className="space-y-4">
+                    <h4 className="font-medium">Lịch sử nhập xuất kho</h4>
+                    <div className="max-h-[200px] overflow-y-auto">
+                      {inventoryHistory.length > 0 ? (
+                        <div className="space-y-2">
+                          {inventoryHistory.map((record) => (
+                            <div key={record.id} className="flex items-start justify-between p-2 bg-muted rounded">
+                              <div>
+                                <p className="font-medium">
+                                  {record.type === 'add' ? 'Nhập kho' : 
+                                   record.type === 'subtract' ? 'Xuất kho' : 'Điều chỉnh'}
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  {record.note || 'Không có ghi chú'}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <p className={cn(
+                                  "font-medium",
+                                  record.type === 'add' ? 'text-green-600' :
+                                  record.type === 'subtract' ? 'text-red-600' : ''
+                                )}>
+                                  {record.type === 'add' ? '+' : record.type === 'subtract' ? '-' : ''}{record.quantity}
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  {formatDate(record.createdAt)}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-center text-muted-foreground py-4">
+                          Chưa có lịch sử nhập xuất kho
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsInventoryDialogOpen(false)}>
+                    Đóng
+                  </Button>
+                  <Button 
+                    type="submit"
+                    onClick={inventoryForm.handleSubmit(handleInventorySubmit)}
+                    disabled={updateInventoryMutation.isPending}
+                  >
+                    {updateInventoryMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      'Cập nhật'
+                    )}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
             <Button className="w-full" onClick={() => setLocation('/orders/new')}>
               <ShoppingCart className="mr-2 h-4 w-4" />
               Tạo đơn hàng

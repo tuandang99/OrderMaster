@@ -41,6 +41,20 @@ export const products = pgTable('products', {
   sku: text('sku').notNull().unique(),
   price: doublePrecision('price').notNull(),
   description: text('description'),
+  stock: integer('stock').default(0),
+  lowStockAlert: integer('low_stock_alert'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// Bảng lưu lịch sử nhập xuất kho
+export const inventoryHistory = pgTable('inventory_history', {
+  id: serial('id').primaryKey(),
+  productId: integer('product_id').notNull().references(() => products.id),
+  type: text('type').notNull(), // 'add', 'subtract', 'set'
+  quantity: integer('quantity').notNull(),
+  previousStock: integer('previous_stock').notNull(),
+  newStock: integer('new_stock').notNull(),
+  note: text('note'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 

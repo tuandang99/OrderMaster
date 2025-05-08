@@ -102,6 +102,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Quản lý kho
+  app.patch("/api/products/:id/inventory", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID sản phẩm không hợp lệ" });
+      }
+
+      const { stock, type } = req.body;
+      if (typeof stock !== 'number' || !['add', 'subtract', 'set'].includes(type)) {
+        return res.status(400).json({ 
+          message: "Dữ liệu không hợp lệ",
+          allowedTypes: ['add', 'subtract', 'set']
+        });
+      }
+
+      const product = await storage.getProductById(id);
+      if (!product) {
+        return res.status(404).json({ message: "Không tìm thấy sản phẩm" });
+      }
+
+      let newStock = product.stock || 0;
+      switch (type) {
+        case 'add':
+          newStock += stock;
+          break;
+        case 'subtract':
+          newStock = Math.max(0, newStock - stock);
+          break;
+        case 'set':
+          newStock = Math.max(0, stock);
+          break;
+      }
+
+      const updatedProduct = await storage.updateProduct(id, { stock: newStock });
+      res.json(updatedProduct);
+    } catch (error) {
+      console.error("Error updating inventory:", error);
+      res.status(500).json({ message: "Không thể cập nhật tồn kho" });
+    }
+  });
+
+  // Lịch sử nhập xuất kho
+  app.get("/api/products/:id/inventory-history", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID sản phẩm không hợp lệ" });
+      }
+
+      const history = await storage.getInventoryHistory(id);
+      res.json(history);
+    } catch (error) {
+      console.error("Error fetching inventory history:", error);
+      res.status(500).json({ message: "Không thể lấy lịch sử tồn kho" });
+    }
+  });
+
   // Orders API
   app.get("/api/orders", async (req: Request, res: Response) => {
     try {
