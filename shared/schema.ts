@@ -179,12 +179,12 @@ export const selectShippingSchema = createSelectSchema(shipping);
 export const createOrderSchema = z.object({
   customer: insertCustomerSchema,
   items: z.array(z.object({
-    productId: z.number(),
-    quantity: z.number().min(1),
-    price: z.number().min(0),
+    productId: z.coerce.number(),
+    quantity: z.coerce.number().min(1),
+    price: z.coerce.number().min(0),
   })),
   shipping: z.object({
-    cost: z.number().min(0),
+    cost: z.coerce.number().min(0),
     carrier: z.string(),
   }),
   notes: z.string().optional(),
