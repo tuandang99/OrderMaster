@@ -61,7 +61,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Products API
   app.get("/api/products", async (req: Request, res: Response) => {
     try {
-      const products = await storage.getProducts();
+      const { search, page, limit } = req.query;
+      
+      const options: any = {};
+      
+      if (search && typeof search === 'string') {
+        options.search = search;
+      }
+      
+      if (page && typeof page === 'string') {
+        options.page = parseInt(page);
+      }
+      
+      if (limit && typeof limit === 'string') {
+        options.limit = parseInt(limit);
+      }
+      
+      const products = await storage.getProducts(options);
       res.json(products);
     } catch (error) {
       console.error("Error fetching products:", error);
