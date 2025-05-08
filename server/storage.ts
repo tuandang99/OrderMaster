@@ -21,14 +21,22 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
 
   // Customer operations
-  getCustomers(): Promise<Customer[]>;
+  getCustomers(options?: { 
+    search?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{ data: Customer[]; total: number }>;
   getCustomerById(id: number): Promise<Customer | undefined>;
   getCustomerByPhone(phone: string): Promise<Customer | undefined>;
   createCustomer(customer: InsertCustomer): Promise<Customer>;
   updateCustomer(id: number, customer: Partial<InsertCustomer>): Promise<Customer | undefined>;
   
   // Product operations
-  getProducts(): Promise<Product[]>;
+  getProducts(options?: { 
+    search?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{ data: Product[]; total: number }>;
   getProductById(id: number): Promise<Product | undefined>;
   getProductBySku(sku: string): Promise<Product | undefined>;
   createProduct(product: InsertProduct): Promise<Product>;
@@ -53,6 +61,7 @@ export interface IStorage {
     search?: string;
     page?: number;
     limit?: number;
+    customerId?: number;
   }): Promise<{ orders: OrderWithRelations[]; total: number }>;
   getOrderById(id: number): Promise<OrderWithRelations | undefined>;
   getOrderByNumber(orderNumber: string): Promise<OrderWithRelations | undefined>;
@@ -68,6 +77,9 @@ export interface IStorage {
   getShippingByOrderId(orderId: number): Promise<Shipping | undefined>;
   createShipping(shipping: InsertShipping): Promise<Shipping>;
   updateShipping(id: number, shippingData: Partial<InsertShipping>): Promise<Shipping | undefined>;
+  
+  // Delete operation
+  deleteOrder(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -91,8 +103,52 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Customer operations
-  async getCustomers(): Promise<Customer[]> {
-    return await db.select().from(customers).orderBy(desc(customers.createdAt));
+  async getCustomers(options?: { 
+    search?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{ data: Customer[]; total: number }> {
+    options = options || {};
+    const limit = options.limit || 10;
+    const offset = options.page ? (options.page - 1) * limit : 0;
+    
+    // Build where conditions based on filters
+    let query = db.select().from(customers);
+    
+    if (options.search) {
+      query = query.where(
+        or(
+          like(customers.name, `%${options.search}%`),
+          like(customers.phone, `%${options.search}%`),
+          like(customers.email, `%${options.search}%`)
+        )
+      );
+    }
+    
+    // Count total
+    const [{ count }] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(customers)
+      .where(
+        options.search 
+          ? or(
+              like(customers.name, `%${options.search}%`),
+              like(customers.phone, `%${options.search}%`),
+              like(customers.email, `%${options.search}%`)
+            )
+          : undefined
+      );
+    
+    // Get data with pagination
+    const data = await query
+      .orderBy(desc(customers.createdAt))
+      .limit(limit)
+      .offset(offset);
+    
+    return {
+      data,
+      total: Number(count)
+    };
   }
 
   async getCustomerById(id: number): Promise<Customer | undefined> {
@@ -120,8 +176,52 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Product operations
-  async getProducts(): Promise<Product[]> {
-    return await db.select().from(products).orderBy(asc(products.name));
+  async getProducts(options?: { 
+    search?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{ data: Product[]; total: number }> {
+    options = options || {};
+    const limit = options.limit || 10;
+    const offset = options.page ? (options.page - 1) * limit : 0;
+    
+    // Build where conditions based on filters
+    let query = db.select().from(products);
+    
+    if (options.search) {
+      query = query.where(
+        or(
+          like(products.name, `%${options.search}%`),
+          like(products.sku, `%${options.search}%`),
+          like(products.description, `%${options.search}%`)
+        )
+      );
+    }
+    
+    // Count total
+    const [{ count }] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(products)
+      .where(
+        options.search 
+          ? or(
+              like(products.name, `%${options.search}%`),
+              like(products.sku, `%${options.search}%`),
+              like(products.description, `%${options.search}%`)
+            )
+          : undefined
+      );
+    
+    // Get data with pagination
+    const data = await query
+      .orderBy(asc(products.name))
+      .limit(limit)
+      .offset(offset);
+    
+    return {
+      data,
+      total: Number(count)
+    };
   }
 
   async getProductById(id: number): Promise<Product | undefined> {

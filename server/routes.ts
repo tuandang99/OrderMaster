@@ -17,8 +17,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Customers API
   app.get("/api/customers", async (req: Request, res: Response) => {
     try {
-      const customers = await storage.getCustomers();
-      res.json(customers);
+      const { search, page, limit } = req.query;
+      
+      const options: any = {};
+      
+      if (search && typeof search === 'string') {
+        options.search = search;
+      }
+      
+      if (page && typeof page === 'string') {
+        options.page = parseInt(page);
+      }
+      
+      if (limit && typeof limit === 'string') {
+        options.limit = parseInt(limit);
+      }
+      
+      const result = await storage.getCustomers(options);
+      res.json(result);
     } catch (error) {
       console.error("Error fetching customers:", error);
       res.status(500).json({ message: "Failed to fetch customers" });
@@ -77,8 +93,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         options.limit = parseInt(limit);
       }
       
-      const products = await storage.getProducts(options);
-      res.json(products);
+      const result = await storage.getProducts(options);
+      res.json(result);
     } catch (error) {
       console.error("Error fetching products:", error);
       res.status(500).json({ message: "Failed to fetch products" });
