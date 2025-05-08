@@ -147,6 +147,7 @@ export default function OrdersIndex() {
       'Khách hàng': order.customer.name,
       'SĐT': order.customer.phone,
       'Ngày đặt hàng': formatDate(order.orderDate),
+      'Số sản phẩm': order.items.reduce((total, item) => total + item.quantity, 0),
       'Tổng tiền': formatCurrency(order.total),
       'Trạng thái': orderStatusTranslations[order.status] || order.status,
       'Vận chuyển': order.shipping?.carrier || 'Chưa có',
@@ -187,7 +188,10 @@ export default function OrdersIndex() {
     {
       accessorKey: "items",
       header: "Số sản phẩm",
-      cell: ({ row }) => row.original.items.length,
+      cell: ({ row }) => {
+        // Tính tổng số lượng sản phẩm từ tất cả các mục trong đơn hàng
+        return row.original.items.reduce((total, item) => total + item.quantity, 0);
+      },
     },
     {
       accessorKey: "total",
